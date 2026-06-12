@@ -1,0 +1,60 @@
+/**
+ * FORCE FULL WIDTH - NO EMPTY SPACE
+ * Remove all max-width constraints in admin
+ */
+
+/* Remove all max-width constraints */
+.admin-page,
+.admin-page > div,
+.admin-page > div > div {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+/* Ensure admin content uses full width */
+main {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+/* Force containers to be full width */
+[class*="container"],
+[class*="mx-auto"] {
+  max-width: none !important;
+  width: 100% !important;
+}
+
+/* Minimal padding for full width */
+.admin-full-width {
+  padding-left: 0.75rem !important;   /* 12px */
+  padding-right: 0.75rem !important;  /* 12px */
+}
+
+@media (min-width: 640px) {
+  .admin-full-width {
+    padding-left: 1rem !important;    /* 16px */
+    padding-right: 1rem !important;   /* 16px */
+  }
+}
+
+@media (min-width: 1024px) {
+  .admin-full-width {
+    padding-left: 1.5rem !important;  /* 24px */
+    padding-right: 1.5rem !important; /* 24px */
+  }
+}
+
+/* Ensure tables use full width */
+.admin-table-wrapper {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.admin-table-wrapper table {
+  width: 100% !important;
+}
+
+/* Grid layouts use full width */
+.grid {
+  width: 100% !important;
+}

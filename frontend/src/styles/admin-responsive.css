@@ -1,0 +1,164 @@
+/**
+ * Admin Responsive Enhancements
+ * Additional responsive styles for the admin space
+ */
+
+/* ===================================
+   Mobile Optimizations (< 640px)
+   =================================== */
+
+@media (max-width: 639px) {
+  /* Reduce padding on mobile */
+  .admin-content-wrapper {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Make tables scrollable horizontally */
+  .admin-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Smaller text on mobile */
+  .admin-heading {
+    font-size: 1.5rem !important;
+  }
+
+  /* Stack filters vertically on mobile */
+  .admin-filters-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Smaller buttons on mobile */
+  .admin-button {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.875rem !important;
+  }
+
+  /* Smaller stats cards */
+  .admin-stat-value {
+    font-size: 1.5rem !important;
+  }
+
+  /* Hide less important columns on mobile */
+  .admin-table th:not(.essential),
+  .admin-table td:not(.essential) {
+    display: none;
+  }
+
+  /* Modal full width on mobile */
+  .admin-modal {
+    width: 100% !important;
+    margin: 1rem !important;
+  }
+}
+
+/* ===================================
+   Tablet Optimizations (640px - 1023px)
+   =================================== */
+
+@media (min-width: 640px) and (max-width: 1023px) {
+  /* Adjust grid columns for tablets */
+  .admin-grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Two-column layout for filters */
+  .admin-filters-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* ===================================
+   Desktop Optimizations (>= 1024px)
+   =================================== */
+
+@media (min-width: 1024px) {
+  /* Full grid on desktop */
+  .admin-grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .admin-grid-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .admin-grid-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ===================================
+   Touch Optimizations
+   =================================== */
+
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets */
+  .admin-button,
+  .admin-link,
+  .admin-icon-button {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Remove hover effects on touch devices */
+  .admin-card:hover {
+    transform: none !important;
+  }
+}
+
+/* ===================================
+   Print Optimizations
+   =================================== */
+
+@media print {
+  /* Hide navigation and actions */
+  .admin-navigation,
+  .admin-actions,
+  .admin-filters {
+    display: none !important;
+  }
+
+  /* Full width for content */
+  .admin-content {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Black text for better printing */
+  body {
+    color: #000 !important;
+    background: #fff !important;
+  }
+}
+
+/* ===================================
+   Accessibility Enhancements
+   =================================== */
+
+/* Focus visible for keyboard navigation */
+.admin-button:focus-visible,
+.admin-input:focus-visible,
+.admin-link:focus-visible {
+  outline: 2px solid #C9A14A;
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .admin-card {
+    border-width: 2px !important;
+  }
+}
+
+/* Reduced motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

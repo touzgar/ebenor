@@ -104,25 +104,25 @@ export default function HomepageManagementPage() {
     <div className="min-h-screen bg-neutral-50">
       {/* Header */}
       <div className="bg-white border-b border-neutral-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="w-full px-3 sm:px-4 lg:px-6 py-6">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <h1 className="text-3xl font-bold text-neutral-900">
+            <h1 className="text-3xl lg:text-4xl font-bold text-neutral-900">
               Gestion de la page d'accueil
             </h1>
-            <p className="mt-2 text-neutral-600">
+            <p className="mt-3 text-base lg:text-lg text-neutral-600">
               Personnalisez le contenu de votre page d'accueil section par section
             </p>
           </motion.div>
         </div>
       </div>
 
-      {/* Sections Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Sections Grid - FULL WIDTH */}
+      <div className="w-full px-3 sm:px-4 lg:px-6 py-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {sections.map((section, index) => (
             <motion.div
               key={section.name}
@@ -132,22 +132,25 @@ export default function HomepageManagementPage() {
             >
               <Link
                 href={section.href}
-                className="block h-full bg-white rounded-lg shadow-sm border border-neutral-200 hover:shadow-lg hover:border-amber-300 transition-all duration-200 overflow-hidden group"
+                className="relative block h-full bg-white/60 backdrop-blur-sm rounded-xl shadow-sm border border-neutral-200/60 hover:shadow-2xl hover:border-amber-300 transition-all duration-200 overflow-hidden group transform-gpu hover:-translate-y-1"
               >
                 <div className={`h-2 bg-gradient-to-r ${section.color}`}></div>
-                <div className="p-6">
-                  <div className={`inline-flex items-center justify-center w-16 h-16 rounded-lg bg-gradient-to-br ${section.color} text-white mb-4 group-hover:scale-110 transition-transform duration-200`}>
+                <div className="p-6 lg:p-8">
+                  <div className="absolute top-3 right-3">
+                    <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full font-semibold">Gérer</span>
+                  </div>
+                  <div className={`inline-flex items-center justify-center w-16 h-16 lg:w-20 lg:h-20 rounded-xl bg-gradient-to-br ${section.color} text-white mb-4 lg:mb-5 group-hover:scale-105 transition-transform duration-200 shadow-md`}>
                     {section.icon}
                   </div>
-                  <h3 className="text-xl font-semibold text-neutral-900 mb-2 group-hover:text-amber-600 transition-colors">
+                  <h3 className="text-lg lg:text-xl font-semibold text-neutral-900 mb-2 lg:mb-3 group-hover:text-amber-600 transition-colors">
                     {section.name}
                   </h3>
-                  <p className="text-neutral-600 text-sm">
+                  <p className="text-neutral-600 text-sm lg:text-base leading-relaxed">
                     {section.description}
                   </p>
-                  <div className="mt-4 flex items-center text-amber-600 text-sm font-medium">
+                  <div className="mt-4 lg:mt-6 flex items-center text-amber-600 text-sm lg:text-base font-medium">
                     <span>Modifier</span>
-                    <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 ml-2 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </div>
@@ -157,59 +160,9 @@ export default function HomepageManagementPage() {
           ))}
         </div>
 
-        {/* Help Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.6 }}
-          className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6"
-        >
-          <div className="flex items-start">
-            <svg className="w-6 h-6 text-blue-600 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div>
-              <h4 className="text-lg font-semibold text-blue-900 mb-2">
-                Comment ça marche ?
-              </h4>
-              <ul className="text-blue-800 text-sm space-y-1">
-                <li>• Cliquez sur une section pour modifier son contenu</li>
-                <li>• Chaque section peut être publiée ou dépubliée indépendamment</li>
-                <li>• Les modifications sont sauvegardées immédiatement</li>
-                <li>• Utilisez la prévisualisation pour voir le rendu final</li>
-              </ul>
-            </div>
-          </div>
-        </motion.div>
+        {/* Help Section removed per request */}
 
-        {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.7 }}
-          className="mt-6 flex flex-wrap gap-4"
-        >
-          <Link
-            href="/"
-            target="_blank"
-            className="inline-flex items-center px-4 py-2 bg-white border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-            Voir la page d'accueil
-          </Link>
-          
-          <Link
-            href="/admin/dashboard"
-            className="inline-flex items-center px-4 py-2 bg-white border border-neutral-300 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Retour au tableau de bord
-          </Link>
-        </motion.div>
+        {/* Quick actions removed per request - modernized layout */}
       </div>
     </div>
   );

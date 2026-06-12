@@ -30,9 +30,7 @@ export default function NotFound() {
   ];
 
   return (
-    <html lang="fr">
-      <body className="font-sans antialiased">
-        <div className="min-h-screen bg-gradient-to-br from-[#0D0D0D] via-[#1A1A1A] to-[#0D0D0D] flex items-center justify-center px-4 py-16">
+    <div className="min-h-screen font-sans antialiased bg-gradient-to-br from-[#0D0D0D] via-[#1A1A1A] to-[#0D0D0D] flex items-center justify-center px-4 py-16">
           <div className="max-w-3xl w-full">
             {/* 404 Number with Animation */}
             <motion.div
@@ -200,7 +198,5 @@ export default function NotFound() {
             <div className="absolute top-1/2 right-1/4 w-16 h-16 border border-[#C9A14A]/5 rounded-full pointer-events-none" />
           </div>
         </div>
-      </body>
-    </html>
   );
 }

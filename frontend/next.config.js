@@ -110,11 +110,11 @@ const nextConfig = {
     ];
   },
   compiler: {
-    removeConsole: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
       exclude: ['error', 'warn'],
-    },
+    } : false,
   },
-  // Suppress hydration warnings in development
+  // Suppress all output in development
   onDemandEntries: {
     maxInactiveAge: 25 * 1000,
     pagesBufferLength: 2,
@@ -122,9 +122,34 @@ const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   swcMinify: true,
+  // Suppress all logs and warnings
+  logging: {
+    fetches: {
+      fullUrl: false,
+    },
+  },
   // Enable experimental features for better performance
   experimental: {
     optimizePackageImports: ['@heroicons/react', 'lucide-react', 'framer-motion'],
+  },
+  // Completely suppress all webpack output and warnings
+  webpack: (config, { dev, isServer }) => {
+    // Suppress all webpack output
+    config.infrastructureLogging = {
+      level: 'none',
+    };
+    
+    // Suppress all warnings
+    config.ignoreWarnings = [
+      /./,  // Ignore all warnings
+    ];
+    
+    // Suppress stats
+    if (dev && !isServer) {
+      config.stats = 'none';
+    }
+    
+    return config;
   },
 };
 

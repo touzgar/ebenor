@@ -72,9 +72,15 @@ export interface ProductResponse {
 export interface CategoriesResponse {
   success: boolean;
   data: Array<{
-    category: string;
-    count: number;
-    subcategories: Array<{
+    category?: string;
+    name?: string;
+    slug?: string;
+    count?: number;
+    icon?: string;
+    color?: string;
+    description?: string;
+    displayOrder?: number;
+    subcategories?: Array<{
       name: string;
       count: number;
     }>;
@@ -88,7 +94,7 @@ export async function getProducts(
   page: number = 1,
   limit: number = 12,
   filters: ProductFilters = {},
-  sortBy: string = 'newest'
+  sortBy: string = '-createdAt'
 ): Promise<ProductsResponse> {
   try {
     const params = new URLSearchParams({

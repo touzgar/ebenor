@@ -41,6 +41,31 @@ export function AdminNavigation() {
     return () => clearInterval(interval);
   }, []);
 
+  // When navigating to messages page, mark unread messages as read (client-side UX + server)
+  useEffect(() => {
+    const markAllAsReadOnOpen = async () => {
+      try {
+        if (pathname && pathname.startsWith('/admin/messages')) {
+          // fetch unread messages (limit large enough)
+          const res = await messagesService.getUnreadMessages(100);
+          if (res.success && Array.isArray(res.data) && res.data.length > 0) {
+            // mark each as read in parallel
+            await Promise.all(
+              res.data.map((msg) => messagesService.markAsRead(msg._id))
+            );
+          }
+
+          // update local badge immediately
+          setUnreadCount(0);
+        }
+      } catch (err) {
+        console.error('Error marking messages as read on open:', err);
+      }
+    };
+
+    markAllAsReadOnOpen();
+  }, [pathname]);
+
   const navigation: NavItem[] = [
     {
       name: 'Tableau de bord',
@@ -115,6 +140,7 @@ export function AdminNavigation() {
                 src="/logo/logo.jpg"
                 alt="ÉBENOR CRÉATION"
                 fill
+                sizes="40px"
                 className="object-cover"
               />
             </div>
@@ -203,6 +229,7 @@ export function AdminNavigation() {
                 src="/logo/logo.jpg"
                 alt="ÉBENOR CRÉATION"
                 fill
+                sizes="32px"
                 className="object-cover"
               />
             </div>

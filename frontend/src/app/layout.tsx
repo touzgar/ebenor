@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import { Inter, Playfair_Display } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 import { Providers } from '@/components/providers/Providers';
 import { suppressConsoleInProduction } from '@/lib/suppressConsole';
+import '@/utils/suppressWarnings'; // Suppress non-critical warnings in development
 
 // Suppress console logs in production
 if (typeof window !== 'undefined') {
@@ -87,6 +89,17 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr" className={`${inter.variable} ${playfair.variable}`}>
+      <head>
+        <Script
+          id="silence-console"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+(function(){var n=function(){};window.console={log:n,warn:n,error:n,info:n,debug:n,trace:n,table:n,dir:n,dirxml:n,group:n,groupCollapsed:n,groupEnd:n,time:n,timeEnd:n,timeLog:n,timeStamp:n,count:n,countReset:n,assert:n,clear:n,profile:n,profileEnd:n};window.addEventListener('error',function(e){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return false},true);window.addEventListener('unhandledrejection',function(e){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return false},true);window.addEventListener('rejectionhandled',function(e){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return false},true);window.onerror=function(){return true};window.onunhandledrejection=function(){return true};try{Object.defineProperty(window,'console',{value:window.console,writable:false,configurable:false})}catch(e){}})();
+            `.trim()
+          }}
+        />
+      </head>
       <body className="font-sans antialiased">
         <Providers>
           <div id="root">

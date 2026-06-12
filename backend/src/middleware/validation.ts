@@ -560,8 +560,8 @@ export const validateProductFilters = [
   query('search')
     .optional()
     .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage('La recherche doit contenir entre 2 et 100 caractères'),
+    .isLength({ min: 1, max: 100 })
+    .withMessage('La recherche doit contenir entre 1 et 100 caractères'),
   
   query('minPrice')
     .optional()
@@ -662,8 +662,8 @@ export const validateMessageFilters = [
   query('search')
     .optional()
     .trim()
-    .isLength({ min: 2, max: 100 })
-    .withMessage('La recherche doit contenir entre 2 et 100 caractères'),
+    .isLength({ min: 1, max: 100 })
+    .withMessage('La recherche doit contenir entre 1 et 100 caractères'),
   
   handleValidationErrors
 ];

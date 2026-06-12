@@ -252,6 +252,7 @@ export function SaveSuccessModal({
                           src={productImage}
                           alt={productName}
                           fill
+                          sizes="96px"
                           className="object-cover"
                         />
                       </div>

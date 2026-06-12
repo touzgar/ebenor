@@ -146,7 +146,7 @@ export default function ColumnVisibilityMenu({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -10, scale: 0.95 }}
               transition={{ duration: 0.15 }}
-              className="fixed lg:absolute left-4 right-4 lg:left-auto lg:right-0 top-20 lg:top-full lg:mt-2 w-auto lg:w-96 bg-white rounded-xl shadow-2xl border border-neutral-200 z-[110] overflow-hidden"
+              className="fixed left-4 right-4 lg:left-auto lg:right-8 top-20 lg:top-20 w-auto lg:w-96 bg-white rounded-xl shadow-2xl border border-neutral-200 z-[9999] overflow-hidden"
               style={{ maxHeight: 'min(600px, calc(100vh - 10rem))' }}
             >
             {/* Header */}

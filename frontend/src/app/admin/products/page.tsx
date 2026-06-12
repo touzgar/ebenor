@@ -90,11 +90,13 @@ export default function ProductsListPage() {
 
     if (successParam === 'updated') {
       toast.success(`${productName} a été mis à jour avec succès`);
-      // Clean URL
+      // Refresh list and clean URL
+      fetchProducts().catch(() => {});
       window.history.replaceState({}, '', '/admin/products');
     } else if (successParam === 'true') {
       toast.success(`${productName} a été créé avec succès`);
-      // Clean URL
+      // Refresh list and clean URL
+      fetchProducts().catch(() => {});
       window.history.replaceState({}, '', '/admin/products');
     }
   }, []);
@@ -227,63 +229,64 @@ export default function ProductsListPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-amber-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-amber-50 py-6">
+      {/* FULL WIDTH - NO CONTAINER */}
+      <div className="w-full px-3 sm:px-4 lg:px-6">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-neutral-900 flex items-center gap-3">
-                <CubeIcon className="h-8 w-8 text-amber-600" />
+              <h1 className="text-3xl lg:text-4xl font-bold text-neutral-900 flex items-center gap-3">
+                <CubeIcon className="h-10 w-10 text-amber-600" />
                 Gestion des Produits
               </h1>
-              <p className="mt-2 text-neutral-600">
+              <p className="mt-2 text-base lg:text-lg text-neutral-600">
                 Gérez votre catalogue de produits
               </p>
             </div>
             <Link
               href="/admin/products/new"
-              className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-2 shadow-lg hover:shadow-xl"
+              className="px-5 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-2 shadow-lg hover:shadow-xl text-base font-medium"
             >
-              <PlusIcon className="h-5 w-5" />
+              <PlusIcon className="h-6 w-6" />
               Nouveau Produit
             </Link>
           </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-amber-600">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-white rounded-xl shadow-sm p-8 border-l-4 border-amber-600">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-neutral-600">Total Produits</p>
-                <p className="text-3xl font-bold text-neutral-900">{totalProducts}</p>
+                <p className="text-base text-neutral-600 mb-2">Total Produits</p>
+                <p className="text-4xl font-bold text-neutral-900">{totalProducts}</p>
               </div>
-              <CubeIcon className="h-12 w-12 text-amber-600 opacity-20" />
+              <CubeIcon className="h-16 w-16 text-amber-600 opacity-20" />
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-green-600">
+          <div className="bg-white rounded-xl shadow-sm p-8 border-l-4 border-green-600">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-neutral-600">En Stock</p>
-                <p className="text-3xl font-bold text-neutral-900">
+                <p className="text-base text-neutral-600 mb-2">En Stock</p>
+                <p className="text-4xl font-bold text-neutral-900">
                   {products.filter((p) => p.availability === 'in_stock').length}
                 </p>
               </div>
-              <CheckCircleIcon className="h-12 w-12 text-green-600 opacity-20" />
+              <CheckCircleIcon className="h-16 w-16 text-green-600 opacity-20" />
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6 border-l-4 border-yellow-600">
+          <div className="bg-white rounded-xl shadow-sm p-8 border-l-4 border-yellow-600">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-neutral-600">En Vedette</p>
-                <p className="text-3xl font-bold text-neutral-900">
+                <p className="text-base text-neutral-600 mb-2">En Vedette</p>
+                <p className="text-4xl font-bold text-neutral-900">
                   {products.filter((p) => p.featured).length}
                 </p>
               </div>
-              <StarIcon className="h-12 w-12 text-yellow-600 opacity-20" />
+              <StarIcon className="h-16 w-16 text-yellow-600 opacity-20" />
             </div>
           </div>
         </div>
@@ -291,7 +294,7 @@ export default function ProductsListPage() {
         {/* Search */}
         <div className="mb-6">
           <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
+            <MagnifyingGlassIcon className="absolute left-5 top-1/2 transform -translate-y-1/2 h-6 w-6 text-neutral-400" />
             <input
               type="text"
               value={searchQuery}
@@ -300,13 +303,13 @@ export default function ProductsListPage() {
                 setCurrentPage(1);
               }}
               placeholder="Rechercher un produit..."
-              className="w-full pl-12 pr-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white shadow-sm"
+              className="w-full pl-14 pr-6 py-4 text-lg border border-neutral-300 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white shadow-sm"
             />
           </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <div className="bg-white rounded-xl shadow-sm p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <select
@@ -315,7 +318,7 @@ export default function ProductsListPage() {
                   setCategoryFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full px-5 py-3 text-base border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
               >
                 <option value="">Toutes catégories</option>
                 {categories.map((category) => (
@@ -333,7 +336,7 @@ export default function ProductsListPage() {
                   setAvailabilityFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full px-5 py-3 text-base border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
               >
                 <option value="">Toute disponibilité</option>
                 <option value="in_stock">En stock</option>
@@ -349,7 +352,7 @@ export default function ProductsListPage() {
                   setFeaturedFilter(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full px-5 py-3 text-base border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
               >
                 <option value="">Tous</option>
                 <option value="true">En vedette</option>
@@ -387,7 +390,7 @@ export default function ProductsListPage() {
             )}
           </div>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white rounded-xl shadow-sm">
             {/* Table Header with Column Controls */}
             <div className="px-6 py-4 bg-gradient-to-r from-neutral-50 via-amber-50/30 to-neutral-50 border-b border-neutral-200">
               <div className="flex items-center justify-between gap-4">
@@ -440,7 +443,7 @@ export default function ProductsListPage() {
               </div>
             )}
             
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-visible">
               <table className="min-w-full divide-y divide-neutral-200">
                 <thead className="bg-neutral-50">
                   <tr>
@@ -521,6 +524,7 @@ export default function ProductsListPage() {
                                   src={primaryImage.url}
                                   alt={primaryImage.alt}
                                   fill
+                                  sizes="64px"
                                   className="object-cover"
                                 />
                               ) : (

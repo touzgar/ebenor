@@ -9,8 +9,8 @@ import { HiMenu, HiX } from 'react-icons/hi';
 
 const navigation = [
   { name: 'Accueil', href: '/' },
-  { name: 'Produits', href: '/produits' },
-  { name: 'Réalisations', href: '/galerie' },
+  { name: 'Showroom', href: '/produits' },
+  { name: 'Nos Projets', href: '/galerie' },
   { name: 'À propos', href: '/a-propos' },
   { name: 'Contact', href: '/contact' },
 ];
@@ -49,16 +49,29 @@ export function Header() {
         className="fixed top-0 left-0 right-0 z-50"
         role="banner"
         style={{
-          backgroundColor: 'rgba(13, 13, 13, 0.95)', // Fond noir permanent
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          borderBottom: '1px solid rgba(201, 161, 74, 0.1)',
+          background: isScrolled 
+            ? 'linear-gradient(180deg, rgba(0, 0, 0, 0.98) 0%, rgba(13, 13, 13, 0.95) 100%)'
+            : 'linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(13, 13, 13, 0.75) 100%)',
+          backdropFilter: 'blur(24px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+          borderBottom: isScrolled 
+            ? '1px solid rgba(201, 161, 74, 0.3)'
+            : '1px solid rgba(201, 161, 74, 0.15)',
           boxShadow: isScrolled 
-            ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
-            : '0 2px 8px rgba(0, 0, 0, 0.1)',
+            ? '0 8px 32px rgba(0, 0, 0, 0.5), 0 0 80px rgba(201, 161, 74, 0.08)' 
+            : '0 4px 24px rgba(0, 0, 0, 0.3), 0 0 40px rgba(201, 161, 74, 0.05)',
         }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Ligne décorative supérieure avec effet glow */}
+          <div 
+            className="absolute top-0 left-0 right-0 h-[1px]"
+            style={{
+              background: 'linear-gradient(90deg, transparent 0%, rgba(201, 161, 74, 0.6) 50%, transparent 100%)',
+              boxShadow: '0 0 20px rgba(201, 161, 74, 0.4)',
+            }}
+          />
+          
           <div className="flex items-center h-20">
             
             {/* Logo Premium avec effet circulaire */}
@@ -69,18 +82,21 @@ export function Header() {
               className="flex items-center flex-shrink-0"
             >
               <Link href="/" className="group relative focus-visible-enhanced rounded-full" aria-label="ÉBÉNOR CRÉATION - Retour à l'accueil">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-amber-600 to-amber-700 shadow-2xl shadow-amber-600/50 relative p-1">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 shadow-2xl shadow-amber-500/60 relative p-1 ring-2 ring-amber-400/30 ring-offset-2 ring-offset-black/50">
                   <Image
                     src="/logo/logo.jpg"
                     alt="ÉBÉNOR CRÉATION - Logo"
                     width={48}
                     height={48}
-                    className="w-12 h-12 rounded-full object-cover"
+                    className="w-12 h-12 rounded-full object-cover ring-1 ring-white/20"
                     priority
                   />
                   
-                  {/* Effet glow au hover */}
-                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  {/* Effet glow au hover - plus prononcé */}
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-300/40 to-amber-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-sm" />
+                  
+                  {/* Effet pulse subtil */}
+                  <div className="absolute inset-0 rounded-full bg-amber-400/20 animate-ping opacity-75" style={{ animationDuration: '3s' }} />
                 </div>
               </Link>
             </motion.div>
@@ -104,27 +120,27 @@ export function Header() {
                   >
                     <Link
                       href={item.href}
-                      className={`relative text-sm font-medium tracking-wide transition-all duration-300 focus-visible-enhanced rounded px-2 py-1 ${
+                      className={`relative text-sm font-semibold tracking-wide transition-all duration-300 focus-visible-enhanced rounded px-3 py-2 ${
                         isActive 
-                          ? 'text-[#C9A14A]' 
-                          : 'text-white/90 hover:text-white'
+                          ? 'text-[#C9A14A] drop-shadow-[0_0_8px_rgba(201,161,74,0.8)]' 
+                          : 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] hover:text-[#D4B55A] hover:drop-shadow-[0_0_6px_rgba(212,181,90,0.6)]'
                       }`}
                       aria-current={isActive ? 'page' : undefined}
                     >
                       {item.name}
                       
-                      {/* Underline animé */}
+                      {/* Underline animé avec glow */}
                       <motion.div
-                        className="absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-[#C9A14A] to-[#D4B55A] rounded-full"
+                        className="absolute -bottom-1 left-0 h-0.5 bg-gradient-to-r from-[#C9A14A] via-[#D4B55A] to-[#C9A14A] rounded-full shadow-[0_0_8px_rgba(201,161,74,0.8)]"
                         initial={{ width: isActive ? '100%' : '0%' }}
                         whileHover={{ width: '100%' }}
                         transition={{ duration: 0.3, ease: 'easeInOut' }}
                       />
                       
-                      {/* Effet glow subtil */}
+                      {/* Effet glow subtil sur fond */}
                       {isActive && (
                         <motion.div
-                          className="absolute inset-0 bg-[#C9A14A]/10 rounded-lg -z-10"
+                          className="absolute inset-0 bg-gradient-to-r from-[#C9A14A]/20 via-[#C9A14A]/10 to-[#C9A14A]/20 rounded-lg -z-10 blur-sm"
                           initial={{ opacity: 0, scale: 0.8 }}
                           animate={{ opacity: 1, scale: 1 }}
                           transition={{ duration: 0.3 }}
@@ -145,33 +161,42 @@ export function Header() {
             >
               <Link
                 href="/admin/login"
-                className="group relative px-6 py-2.5 text-white/90 hover:text-[#C9A14A] font-medium text-sm rounded-full border border-white/20 hover:border-[#C9A14A]/50 transition-all duration-300 transform hover:scale-105 focus-visible-enhanced"
+                className="group relative px-6 py-2.5 text-white font-semibold text-sm rounded-full border-2 border-white/30 hover:border-[#C9A14A] hover:text-[#C9A14A] transition-all duration-300 transform hover:scale-105 focus-visible-enhanced backdrop-blur-sm bg-white/5 hover:bg-[#C9A14A]/10 shadow-lg hover:shadow-[#C9A14A]/30"
                 aria-label="Connexion administrateur"
               >
-                <span className="relative z-10 tracking-wide flex items-center space-x-2">
+                <span className="relative z-10 tracking-wide flex items-center space-x-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                   </svg>
                   <span>Admin</span>
                 </span>
+                
+                {/* Effet glow au hover */}
+                <motion.div
+                  className="absolute inset-0 rounded-full bg-[#C9A14A]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 blur-md"
+                  initial={false}
+                />
               </Link>
               
               <Link
                 href="/contact"
-                className="group relative px-8 py-3 bg-gradient-to-r from-[#C9A14A] to-[#D4B55A] text-black font-semibold text-sm rounded-full overflow-hidden shadow-lg hover:shadow-[#C9A14A]/40 transition-all duration-500 transform hover:scale-105 focus-visible-enhanced"
+                className="group relative px-8 py-3 bg-gradient-to-r from-[#C9A14A] via-[#D4B55A] to-[#C9A14A] text-black font-bold text-sm rounded-full overflow-hidden shadow-xl shadow-[#C9A14A]/50 hover:shadow-2xl hover:shadow-[#C9A14A]/70 transition-all duration-500 transform hover:scale-105 focus-visible-enhanced ring-2 ring-amber-400/30 ring-offset-2 ring-offset-black/50"
                 aria-label="Demander un devis - Aller à la page de contact"
               >
-                <span className="relative z-10 tracking-wide">
+                <span className="relative z-10 tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
                   Demander un devis
                 </span>
                 
-                {/* Effet shine au hover */}
+                {/* Effet shine au hover - plus prononcé */}
                 <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -skew-x-12"
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12"
                   initial={{ x: '-100%' }}
                   whileHover={{ x: '100%' }}
-                  transition={{ duration: 0.8 }}
+                  transition={{ duration: 0.6 }}
                 />
+                
+                {/* Glow pulse subtil */}
+                <div className="absolute inset-0 bg-gradient-to-r from-amber-300/30 to-amber-500/30 blur-xl opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
               </Link>
             </motion.div>
 

@@ -193,22 +193,27 @@ export class ProductController {
   }
 
   /**
-   * Obtenir les catégories de produits disponibles
+   * Obtenir les catégories de produits disponibles avec le nombre de produits
    */
   public async getCategories(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // Obtenir les catégories depuis la collection Category
+      // Obtenir toutes les catégories actives
       const categories = await Category.find({ isActive: true })
-        .sort('name')
+        .sort('displayOrder name')
         .lean();
 
       // Si aucune catégorie n'existe, utiliser les catégories distinctes des produits
       if (categories.length === 0) {
-        const distinctCategories = await Product.distinct('category');
+        const productCategories = await Product.aggregate([
+          { $group: { _id: '$category', count: { $sum: 1 } } },
+          { $sort: { count: -1 } }
+        ]);
         
-        const categoriesData = distinctCategories.map(cat => ({
-          name: cat,
-          slug: cat.toLowerCase().replace(/\s+/g, '-'),
+        const categoriesData = productCategories.map(cat => ({
+          category: cat._id,
+          name: cat._id,
+          slug: cat._id.toLowerCase().replace(/\s+/g, '-'),
+          count: cat.count,
           isActive: true,
         }));
 
@@ -221,9 +226,40 @@ export class ProductController {
         return;
       }
 
+      // Compter les produits pour chaque catégorie
+      const categoriesWithCount = await Promise.all(
+        categories.map(async (category) => {
+          const count = await Product.countDocuments({ 
+            category: category.slug 
+          });
+          
+          return {
+            category: category.slug,
+            name: category.name,
+            slug: category.slug,
+            description: category.description,
+            icon: category.icon,
+            color: category.color,
+            count: count,
+            displayOrder: category.displayOrder,
+          };
+        })
+      );
+
+      // Filtrer les catégories avec au moins 1 produit et trier
+      const activeCategories = categoriesWithCount
+        .filter(cat => cat.count > 0)
+        .sort((a, b) => {
+          // Trier par displayOrder puis par count
+          if (a.displayOrder !== b.displayOrder) {
+            return a.displayOrder - b.displayOrder;
+          }
+          return b.count - a.count;
+        });
+
       const response: ApiResponse = {
         success: true,
-        data: categories,
+        data: activeCategories,
       };
 
       res.status(200).json(response);

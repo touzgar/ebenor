@@ -7,6 +7,8 @@ import { Breadcrumb } from '@/components/admin/Breadcrumb';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardProvider } from '@/contexts/DashboardContext';
 import { Toaster } from 'react-hot-toast';
+import '@/styles/admin-responsive.css';
+import '@/styles/admin-fullwidth.css';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -17,13 +19,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuth();
 
-  console.log('🏠 AdminLayout render:', { pathname, isAuthenticated, isLoading });
-
   // Redirect to login if not authenticated (except on login page)
   useEffect(() => {
-    console.log('🔄 AdminLayout effect:', { isLoading, isAuthenticated, pathname });
     if (!isLoading && !isAuthenticated && pathname !== '/admin/login') {
-      console.log('⚠️ Not authenticated, redirecting to login...');
       router.push('/admin/login');
     }
   }, [isAuthenticated, isLoading, pathname, router]);
@@ -79,13 +77,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <main className="lg:pl-64 pt-16 lg:pt-0">
           {/* Breadcrumb navigation */}
           <div className="bg-white/80 backdrop-blur-sm border-b border-neutral-200 sticky top-0 z-10">
-            <div className="px-6 lg:px-8 py-4">
+            <div className="px-4 sm:px-6 lg:px-8 py-4">
               <Breadcrumb />
             </div>
           </div>
           
-          {/* Page content - No max-width for full width */}
-          <div className="min-h-[calc(100vh-4rem)]">
+          {/* Page content - FULL WIDTH - No max-width constraint */}
+          <div className="min-h-[calc(100vh-4rem)] w-full">
             {children}
           </div>
         </main>

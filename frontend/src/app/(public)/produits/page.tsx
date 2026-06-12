@@ -2,13 +2,21 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Navigation } from '@/components/public/Navigation';
+import { motion } from 'framer-motion';
+import { Header } from '@/components/premium/Header';
 import { Footer } from '@/components/public/Footer';
 import ProductGrid from '@/components/public/ProductGrid';
 import ProductTable from '@/components/public/ProductTable';
 import Pagination from '@/components/ui/Pagination';
 import { SkeletonGrid } from '@/components/ui/LoadingSkeleton';
 import { getProducts, Product, ProductFilters, getCategoryLabel, getCategories } from '@/lib/api/products';
+import { 
+  Squares2X2Icon, 
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  SparklesIcon,
+  ShoppingBagIcon
+} from '@heroicons/react/24/outline';
 
 /**
  * Product Catalog Page with SEO optimization
@@ -33,24 +41,15 @@ export default function ProduitsPage() {
     search: searchParams.get('search') || undefined,
   });
 
-  const [availableCategories, setAvailableCategories] = useState<Array<{ category: string; name?: string; count: number }>>([]);
+  const [availableCategories, setAvailableCategories] = useState<Array<{ 
+    category: string; 
+    name?: string; 
+    count: number;
+    icon?: string;
+    color?: string;
+  }>>([]);
   
-  // Fetch available categories dynamically
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const response = await getCategories();
-        if (response.success && response.data) {
-          setAvailableCategories(response.data);
-        }
-      } catch (err) {
-        console.error('Failed to load categories', err);
-      }
-    };
-    loadCategories();
-  }, []);
-  
-  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || '-createdAt');
   const [searchInput, setSearchInput] = useState(filters.search || '');
 
   // Fix SSR hydration by only rendering on client
@@ -80,10 +79,77 @@ export default function ProduitsPage() {
     }
   }, [currentPage, filters, sortBy]);
 
+  // Fetch available categories with counts from API
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        // Use the getCategories API which now returns counts
+        const response = await getCategories();
+        
+        if (response.success && response.data) {
+          const categoriesArray = response.data.map(cat => ({
+            category: cat.slug || cat.category || cat.name || '',
+            name: cat.name || getCategoryLabel(cat.slug || cat.category || ''),
+            count: cat.count || 0,
+            icon: cat.icon,
+            color: cat.color,
+          }));
+          
+          // Sort by count descending if no displayOrder
+          const sortedCategories = categoriesArray.sort((a, b) => {
+            return b.count - a.count;
+          });
+          
+          setAvailableCategories(sortedCategories);
+        }
+      } catch (err) {
+        console.error('Failed to load categories', err);
+        // Fallback: fetch all products and count manually
+        try {
+          const response = await getProducts(1, 1000, {}, '-createdAt');
+          
+          if (response.success && response.data) {
+            const categoryMap = new Map<string, number>();
+            
+            response.data.forEach(product => {
+              const cat = product.category;
+              if (cat) {
+                categoryMap.set(cat, (categoryMap.get(cat) || 0) + 1);
+              }
+            });
+            
+            const categoriesArray = Array.from(categoryMap.entries()).map(([category, count]) => ({
+              category,
+              name: getCategoryLabel(category),
+              count,
+            }));
+            
+            const sortedCategories = categoriesArray.sort((a, b) => b.count - a.count);
+            setAvailableCategories(sortedCategories);
+          }
+        } catch (fallbackErr) {
+          console.error('Fallback also failed', fallbackErr);
+        }
+      }
+    };
+    loadCategories();
+  }, []); // Only load once on mount
+
   // Fetch products when dependencies change
   useEffect(() => {
     if (!mounted) return; // Only fetch on client side
     fetchProducts();
+  }, [fetchProducts, mounted]);
+
+  // Auto-refresh products every 30 seconds to catch real-time changes
+  useEffect(() => {
+    if (!mounted) return;
+    
+    const interval = setInterval(() => {
+      fetchProducts();
+    }, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
   }, [fetchProducts, mounted]);
 
   // Update URL when filters change
@@ -162,191 +228,265 @@ export default function ProduitsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
-      <Navigation />
-      
-      {/* Hero Section */}
-      <section className="relative py-24 bg-gradient-wood text-white" role="banner">
-        <div className="container">
-          <div className="max-w-3xl">
-            <h1 className="text-4xl font-bold mb-6 lg:text-5xl">
-              Nos Produits
-            </h1>
-            <p className="text-xl opacity-90">
-              Explorez notre collection de créations en bois d'exception, 
-              chaque pièce étant le fruit d'un savoir-faire artisanal unique.
-            </p>
+    <>
+      <Header />
+      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-amber-50/10 to-neutral-50">
+        {/* Hero Section - Modern */}
+        <section className="relative pt-32 pb-20 overflow-hidden">
+          {/* Background Decorative Elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-20 right-10 w-72 h-72 bg-amber-300/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-20 left-10 w-96 h-96 bg-amber-400/10 rounded-full blur-3xl" />
           </div>
-        </div>
-      </section>
 
-      {/* Filters and Search */}
-      <section 
-        className="py-8 bg-white border-b sticky top-0 z-10 shadow-sm" 
-        aria-label="Filtres et recherche de produits"
-      >
-        <div className="container">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            {/* Category Filters */}
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrer par catégorie">
-              <button
-                onClick={() => handleCategoryChange('all')}
-                className={`px-4 py-2 rounded-lg font-medium transition-colors focus-visible-enhanced ${
-                  !filters.category
-                    ? 'bg-primary-600 text-white'
-                    : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                }`}
-                aria-pressed={!filters.category}
-                aria-label="Afficher tous les produits"
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="text-center max-w-4xl mx-auto"
+            >
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 shadow-2xl shadow-amber-500/30 mb-8"
               >
-                Tous
-              </button>
-              {availableCategories.map((cat) => (
-                <button
-                  key={cat.category}
-                  onClick={() => handleCategoryChange(cat.category)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors focus-visible-enhanced ${
-                    filters.category === cat.category
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                  }`}
-                  aria-pressed={filters.category === cat.category}
-                  aria-label={`Filtrer par ${cat.name || getCategoryLabel(cat.category)}`}
-                >
-                  {cat.name || getCategoryLabel(cat.category)}
-                </button>
-              ))}
-            </div>
-
-            {/* Search and Sort */}
-            <div className="flex gap-4 flex-1 lg:flex-initial">
-              <form onSubmit={handleSearch} className="flex gap-2 flex-1 lg:w-64" role="search">
-                <label htmlFor="product-search" className="sr-only">Rechercher des produits</label>
-                <div className="relative flex-1">
-                  <input
-                    id="product-search"
-                    type="search"
-                    placeholder="Rechercher... (min 2 car.)"
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                    className="input w-full focus-visible-enhanced"
-                    aria-label="Rechercher des produits"
-                  />
-                  {searchInput && searchInput.trim().length === 1 && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-red-600 bg-white px-1">
-                      Min 2
-                    </div>
-                  )}
-                </div>
-                <button 
-                  type="submit" 
-                  className="btn-primary px-4 focus-visible-enhanced"
-                  aria-label="Lancer la recherche"
-                  disabled={searchInput.trim().length === 1}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </button>
-              </form>
+                <Squares2X2Icon className="w-10 h-10 text-white" />
+              </motion.div>
               
-              <label htmlFor="sort-select" className="sr-only">Trier les produits</label>
-              <select
-                id="sort-select"
-                value={sortBy}
-                onChange={handleSortChange}
-                className="input w-auto focus-visible-enhanced"
-                aria-label="Trier les produits"
-              >
-                <option value="newest">Plus récents</option>
-                <option value="price-asc">Prix croissant</option>
-                <option value="price-desc">Prix décroissant</option>
-                <option value="featured">En vedette</option>
-              </select>
-            </div>
+              <h1 className="text-5xl lg:text-7xl font-bold text-neutral-900 mb-6">
+                Notre <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-amber-500">Showroom</span>
+              </h1>
+              <p className="text-xl lg:text-2xl text-neutral-600 leading-relaxed">
+                Explorez notre collection de créations en bois d'exception, 
+                chaque pièce étant le fruit d'un savoir-faire artisanal unique.
+              </p>
+            </motion.div>
           </div>
+        </section>
 
-          {/* Active Filters */}
-          {hasActiveFilters && (
-            <div className="flex items-center gap-2 mt-4" role="status" aria-live="polite">
-              <span className="text-sm text-neutral-600">Filtres actifs:</span>
-              {filters.category && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm">
-                  {getCategoryLabel(filters.category)}
+        {/* Filters and Search - Enhanced */}
+        <section 
+          className="py-6 bg-white/80 backdrop-blur-xl border-y border-neutral-200/50 sticky top-20 z-40 shadow-sm" 
+          aria-label="Filtres et recherche de produits"
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col gap-6">
+              {/* Category Filters - Enhanced & Organized */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <FunnelIcon className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                  <span className="font-bold text-neutral-900 text-lg">Catégories</span>
+                  <div className="flex-1 h-px bg-gradient-to-r from-amber-200 to-transparent"></div>
+                </div>
+                
+                <div className="flex flex-wrap gap-3">
+                  {/* "Tous" button always first */}
                   <button
                     onClick={() => handleCategoryChange('all')}
-                    className="hover:text-primary-900 focus-visible-enhanced rounded"
-                    aria-label={`Retirer le filtre ${getCategoryLabel(filters.category)}`}
+                    className={`group relative px-6 py-3 rounded-2xl font-semibold transition-all transform hover:scale-105 ${
+                      !filters.category
+                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30'
+                        : 'bg-white text-neutral-700 hover:bg-neutral-50 border-2 border-neutral-200 hover:border-amber-300'
+                    }`}
+                    aria-pressed={!filters.category}
+                    aria-label="Afficher tous les produits"
                   >
-                    ×
+                    <span className="flex items-center gap-2">
+                      <ShoppingBagIcon className="w-5 h-5" />
+                      Tous les produits
+                      <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${
+                        !filters.category 
+                          ? 'bg-white/20' 
+                          : 'bg-neutral-100'
+                      }`}>
+                        {availableCategories.reduce((sum, cat) => sum + cat.count, 0)}
+                      </span>
+                    </span>
                   </button>
-                </span>
-              )}
-              {filters.search && (
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm">
-                  "{filters.search}"
-                  <button
-                    onClick={() => {
-                      setSearchInput('');
-                      setFilters(prev => ({ ...prev, search: undefined }));
-                    }}
-                    className="hover:text-primary-900 focus-visible-enhanced rounded"
-                    aria-label="Retirer le filtre de recherche"
-                  >
-                    ×
-                  </button>
-                </span>
-              )}
-              <button
-                onClick={clearFilters}
-                className="text-sm text-primary-600 hover:text-primary-700 font-medium focus-visible-enhanced rounded px-2 py-1"
-                aria-label="Effacer tous les filtres"
-              >
-                Effacer tout
-              </button>
-            </div>
-          )}
-        </div>
-      </section>
 
-      {/* Products Grid */}
-      <section className="section" aria-label="Liste des produits">
-        <div className="container">
-          {/* Error Message */}
+                  {/* Category buttons sorted by popularity */}
+                  {availableCategories.map((cat) => {
+                    const isActive = filters.category === cat.category;
+                    const buttonStyle = cat.color && isActive ? {
+                      background: `linear-gradient(to right, ${cat.color}, ${cat.color}dd)`,
+                    } : {};
+                    
+                    return (
+                      <button
+                        key={cat.category}
+                        onClick={() => handleCategoryChange(cat.category)}
+                        style={isActive ? buttonStyle : {}}
+                        className={`group relative px-6 py-3 rounded-2xl font-semibold transition-all transform hover:scale-105 ${
+                          isActive
+                            ? cat.color 
+                              ? 'text-white shadow-lg'
+                              : 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30'
+                            : 'bg-white text-neutral-700 hover:bg-neutral-50 border-2 border-neutral-200 hover:border-amber-300'
+                        }`}
+                        aria-pressed={isActive}
+                        aria-label={`Filtrer par ${cat.name || getCategoryLabel(cat.category)}`}
+                      >
+                        <span className="flex items-center gap-2">
+                          {cat.icon && (
+                            <span className="text-lg">{cat.icon}</span>
+                          )}
+                          {cat.name || getCategoryLabel(cat.category)}
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                            isActive 
+                              ? 'bg-white/20' 
+                              : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            {cat.count}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Search - Enhanced */}
+              <div className="flex gap-4 flex-col sm:flex-row">
+                <form onSubmit={handleSearch} className="flex gap-2 flex-1" role="search">
+                  <label htmlFor="product-search" className="sr-only">Rechercher des produits</label>
+                  <div className="relative flex-1">
+                    <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+                    <input
+                      id="product-search"
+                      type="search"
+                      placeholder="Rechercher un produit... (min 2 caractères)"
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      className="w-full pl-12 pr-4 py-3 rounded-2xl border-2 border-neutral-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 transition-all outline-none bg-white"
+                      aria-label="Rechercher des produits"
+                    />
+                    {searchInput && searchInput.trim().length === 1 && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-red-600 bg-red-50 px-2 py-1 rounded-full font-medium">
+                        Min 2 car.
+                      </div>
+                    )}
+                  </div>
+                  <button 
+                    type="submit" 
+                    className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-2xl hover:from-amber-600 hover:to-amber-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Lancer la recherche"
+                    disabled={searchInput.trim().length === 1}
+                  >
+                    Rechercher
+                  </button>
+                </form>
+              </div>
+
+              {/* Active Filters */}
+              {hasActiveFilters && (
+                <div className="flex items-center gap-2 flex-wrap" role="status" aria-live="polite">
+                  <span className="text-sm font-medium text-neutral-600">Filtres actifs:</span>
+                  {filters.category && (
+                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-full text-sm font-medium">
+                      {getCategoryLabel(filters.category)}
+                      <button
+                        onClick={() => handleCategoryChange('all')}
+                        className="hover:text-amber-900 transition-colors"
+                        aria-label={`Retirer le filtre ${getCategoryLabel(filters.category)}`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </span>
+                  )}
+                  {filters.search && (
+                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-full text-sm font-medium">
+                      "{filters.search}"
+                      <button
+                        onClick={() => {
+                          setSearchInput('');
+                          setFilters(prev => ({ ...prev, search: undefined }));
+                        }}
+                        className="hover:text-amber-900 transition-colors"
+                        aria-label="Retirer le filtre de recherche"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </span>
+                  )}
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm text-amber-600 hover:text-amber-700 font-semibold underline"
+                    aria-label="Effacer tous les filtres"
+                  >
+                    Effacer tout
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* Products Grid */}
+        <section className="py-20 relative z-10" aria-label="Liste des produits">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Error Message - Enhanced */}
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-start">
-                <svg className="w-5 h-5 text-red-600 mt-0.5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8 p-6 bg-red-50 border-2 border-red-200 rounded-2xl shadow-lg"
+            >
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
                 <div className="flex-1">
-                  <h3 className="text-sm font-medium text-red-800 mb-1">Erreur de chargement</h3>
-                  <p className="text-sm text-red-700">{error}</p>
-                  <p className="text-sm text-red-600 mt-2">
-                    Vérifiez que le backend est démarré sur <code className="bg-red-100 px-1 rounded">http://localhost:5000</code>
+                  <h3 className="text-lg font-bold text-red-800 mb-2">Erreur de chargement</h3>
+                  <p className="text-sm text-red-700 mb-3">{error}</p>
+                  <p className="text-sm text-red-600 bg-red-100 p-3 rounded-lg mb-4">
+                    <strong>Solution:</strong> Vérifiez que le backend est démarré sur <code className="bg-red-200 px-2 py-1 rounded font-mono">http://localhost:5000</code>
                   </p>
                   <button
                     onClick={() => fetchProducts()}
-                    className="mt-3 text-sm text-red-700 font-medium hover:text-red-800 underline"
+                    className="px-6 py-2.5 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-all shadow-lg hover:shadow-xl"
                   >
-                    Réessayer
+                    🔄 Réessayer
                   </button>
                 </div>
               </div>
-            </div>
+            </motion.div>
           )}
           
-          {/* Results Count */}
-          <div className="mb-6">
-            <p className="text-neutral-600" role="status" aria-live="polite" aria-atomic="true">
-              {loading ? (
-                <span className="inline-block w-32 h-5 bg-neutral-200 animate-pulse rounded" />
-              ) : (
-                <>
-                  <span className="font-semibold text-neutral-900">{total}</span> produit{total !== 1 ? 's' : ''} trouvé{total !== 1 ? 's' : ''}
-                </>
+          {/* Results Count - Enhanced */}
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <p className="text-lg font-medium" role="status" aria-live="polite" aria-atomic="true">
+                {loading ? (
+                  <span className="inline-block w-48 h-7 bg-neutral-200 animate-pulse rounded-lg" />
+                ) : (
+                  <span className="text-neutral-600">
+                    <span className="text-3xl font-bold text-neutral-900">{total}</span> 
+                    <span className="ml-2">produit{total !== 1 ? 's' : ''} trouvé{total !== 1 ? 's' : ''}</span>
+                  </span>
+                )}
+              </p>
+              {hasActiveFilters && !loading && (
+                <p className="text-sm text-neutral-500 mt-1">
+                  Filtres actifs appliqués
+                </p>
               )}
-            </p>
+            </div>
+            
+            {/* Real-time update indicator */}
+            {!loading && total > 0 && (
+              <div className="flex items-center gap-2 text-sm text-neutral-500">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span>Mis à jour en temps réel</span>
+              </div>
+            )}
           </div>
 
           {/* Product Grid */}
@@ -364,30 +504,45 @@ export default function ProduitsPage() {
               onPageChange={handlePageChange}
             />
           )}
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Call to Action */}
-      <section className="section bg-primary-50">
-        <div className="container text-center">
-          <h2 className="text-3xl font-bold text-neutral-800 mb-4">
-            Vous ne trouvez pas ce que vous cherchez ?
-          </h2>
-          <p className="text-lg text-neutral-600 mb-8 max-w-2xl mx-auto">
-            Nous créons également des pièces sur mesure selon vos spécifications exactes. 
-            Contactez-nous pour discuter de votre projet personnalisé.
-          </p>
-          <a 
-            href="/contact" 
-            className="btn-primary focus-visible-enhanced"
-            aria-label="Aller à la page de contact pour demander un devis sur mesure"
-          >
-            Demander un Devis Sur Mesure
-          </a>
-        </div>
-      </section>
+        {/* Call to Action - Enhanced */}
+        <section className="py-20 bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-white relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-tr from-amber-400/0 via-amber-300/10 to-amber-400/0" />
+          <div className="absolute top-10 right-10 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-10 left-10 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
+          
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full backdrop-blur-sm mb-6">
+                <SparklesIcon className="w-10 h-10 text-white" />
+              </div>
+              <h2 className="text-4xl lg:text-5xl font-bold mb-6">
+                Vous ne trouvez pas ce que vous cherchez ?
+              </h2>
+              <p className="text-xl text-amber-50 mb-10 max-w-2xl mx-auto leading-relaxed">
+                Nous créons également des pièces sur mesure selon vos spécifications exactes. 
+                Contactez-nous pour discuter de votre projet personnalisé.
+              </p>
+              <a 
+                href="/contact" 
+                className="inline-block px-10 py-4 bg-white text-amber-600 font-bold text-lg rounded-full hover:bg-amber-50 transition-all transform hover:scale-105 shadow-2xl hover:shadow-3xl"
+                aria-label="Aller à la page de contact pour demander un devis sur mesure"
+              >
+                Demander un Devis Sur Mesure
+              </a>
+            </motion.div>
+          </div>
+        </section>
+      </div>
       
       <Footer />
-    </div>
+    </>
   );
 }
