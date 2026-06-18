@@ -25,6 +25,11 @@ router.put('/', validateHomeContent, homeController.updateHomeContent.bind(homeC
  * @access  Admin
  */
 router.put('/hero', [
+  body('companyName')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Le nom de l\'entreprise doit contenir entre 2 et 100 caractères'),
   body('title')
     .trim()
     .isLength({ min: 5, max: 200 })
@@ -34,8 +39,19 @@ router.put('/hero', [
     .isLength({ min: 10, max: 500 })
     .withMessage('Le sous-titre hero doit contenir entre 10 et 500 caractères'),
   body('backgroundImage')
-    .isURL()
-    .withMessage('URL de l\'image de fond invalide'),
+    .optional()
+    .custom((value) => {
+      if (!value) return true; // Allow empty
+      // Check if it's a valid URL
+      const urlPattern = /^https?:\/\/.+/;
+      if (!urlPattern.test(value)) {
+        throw new Error('L\'image de fond doit être une URL valide');
+      }
+      return true;
+    }),
+  body('videoUrl')
+    .optional()
+    .trim(),
   body('ctaText')
     .trim()
     .isLength({ min: 2, max: 50 })

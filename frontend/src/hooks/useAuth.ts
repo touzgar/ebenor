@@ -35,20 +35,15 @@ export function useAuth() {
   const checkAuth = async () => {
     try {
       const token = localStorage.getItem('auth_token');
-      console.log('🔍 Checking auth, token:', token ? token.substring(0, 20) + '...' : 'none');
       
       if (!token) {
-        console.log('❌ No token found');
         setState(prev => ({ ...prev, isLoading: false }));
         return;
       }
 
-      console.log('📡 Fetching profile...');
       const response = await authService.getProfile();
-      console.log('📥 Profile response:', response);
       
       if (response.success && response.data) {
-        console.log('✅ Auth check successful, user:', response.data);
         setState({
           user: response.data as User,
           isLoading: false,
@@ -56,13 +51,10 @@ export function useAuth() {
           error: null,
         });
       } else {
-        // Token invalid, clear it
-        console.log('⚠️ Token invalid, clearing...');
         localStorage.removeItem('auth_token');
         setState(prev => ({ ...prev, isLoading: false }));
       }
     } catch (error) {
-      console.error('❌ Auth check error:', error);
       localStorage.removeItem('auth_token');
       setState(prev => ({ ...prev, isLoading: false, error: null }));
     }
@@ -72,17 +64,11 @@ export function useAuth() {
     setState(prev => ({ ...prev, isLoading: true, error: null }));
     
     try {
-      console.log('🔐 Login attempt:', email);
       const response = await authService.login(email, password);
-      console.log('📥 Login response:', response);
       
       if (response.success && response.data) {
         const { token, user } = response.data as any;
         
-        console.log('✅ Login successful, token:', token?.substring(0, 20) + '...');
-        console.log('👤 User:', user);
-        
-        // Store token
         apiClient.setAuthToken(token);
         
         setState({
@@ -92,8 +78,6 @@ export function useAuth() {
           error: null,
         });
         
-        console.log('🚀 Redirecting to dashboard...');
-        // Redirect to dashboard
         router.push('/admin/dashboard');
         
         return { success: true };
@@ -101,7 +85,6 @@ export function useAuth() {
         throw new Error(response.message || 'Login failed');
       }
     } catch (error: any) {
-      console.error('❌ Login error:', error);
       const errorMessage = error.message || 'Une erreur est survenue lors de la connexion';
       setState(prev => ({
         ...prev,

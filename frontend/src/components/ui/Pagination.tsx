@@ -1,5 +1,8 @@
 'use client';
 
+import { motion } from 'framer-motion';
+import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
@@ -14,19 +17,16 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
     const maxVisible = 7;
 
     if (totalPages <= maxVisible) {
-      // Show all pages if total is small
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
       }
     } else {
-      // Always show first page
       pages.push(1);
 
       if (currentPage > 3) {
         pages.push('...');
       }
 
-      // Show pages around current page
       const start = Math.max(2, currentPage - 1);
       const end = Math.min(totalPages - 1, currentPage + 1);
 
@@ -38,7 +38,6 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
         pages.push('...');
       }
 
-      // Always show last page
       pages.push(totalPages);
     }
 
@@ -48,26 +47,36 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
   const pages = getPageNumbers();
 
   return (
-    <div className="flex justify-center items-center gap-2 mt-12">
-      {/* Previous Button */}
-      <button
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex justify-center items-center gap-2 mt-12"
+    >
+      {/* Previous Button - Shadcn Style */}
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="px-4 py-2 rounded-lg border border-neutral-300 text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="group relative h-10 w-10 inline-flex items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-900 shadow-sm transition-all hover:bg-neutral-50 hover:border-amber-300 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-white disabled:hover:border-neutral-200"
         aria-label="Page précédente"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-      </button>
+        <ChevronLeftIcon className="w-5 h-5 transition-transform group-hover:-translate-x-0.5" />
+        
+        {/* Hover effect */}
+        <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-500/0 via-amber-500/0 to-amber-500/0 opacity-0 transition-opacity group-hover:opacity-10" />
+      </motion.button>
 
-      {/* Page Numbers */}
+      {/* Page Numbers - Shadcn Style */}
       <div className="flex gap-2">
         {pages.map((page, index) => {
           if (page === '...') {
             return (
-              <span key={`ellipsis-${index}`} className="px-4 py-2 text-neutral-500">
-                ...
+              <span 
+                key={`ellipsis-${index}`} 
+                className="h-10 px-2 inline-flex items-center justify-center text-neutral-400 font-medium"
+              >
+                •••
               </span>
             );
           }
@@ -76,34 +85,71 @@ export default function Pagination({ currentPage, totalPages, onPageChange }: Pa
           const isActive = pageNumber === currentPage;
 
           return (
-            <button
+            <motion.button
               key={pageNumber}
+              layout
+              whileHover={{ scale: isActive ? 1 : 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => onPageChange(pageNumber)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`relative h-10 min-w-[40px] px-4 inline-flex items-center justify-center rounded-xl font-semibold text-sm transition-all duration-300 ${
                 isActive
-                  ? 'bg-primary-600 text-white'
-                  : 'border border-neutral-300 text-neutral-700 hover:bg-neutral-50'
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30 border-2 border-amber-400'
+                  : 'bg-white text-neutral-700 border border-neutral-200 shadow-sm hover:bg-neutral-50 hover:border-amber-300 hover:shadow-md hover:text-amber-600'
               }`}
               aria-label={`Page ${pageNumber}`}
               aria-current={isActive ? 'page' : undefined}
             >
-              {pageNumber}
-            </button>
+              {/* Active page glow effect */}
+              {isActive && (
+                <motion.span
+                  layoutId="activePageGlow"
+                  className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 opacity-20 blur-sm"
+                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                />
+              )}
+              
+              <span className="relative z-10">{pageNumber}</span>
+              
+              {/* Shimmer effect on active */}
+              {isActive && (
+                <motion.span
+                  initial={{ x: '-100%' }}
+                  animate={{ x: '200%' }}
+                  transition={{ 
+                    duration: 2,
+                    repeat: Infinity,
+                    repeatDelay: 3,
+                    ease: 'linear'
+                  }}
+                  className="absolute inset-0 w-1/2 bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-12"
+                />
+              )}
+            </motion.button>
           );
         })}
       </div>
 
-      {/* Next Button */}
-      <button
+      {/* Next Button - Shadcn Style */}
+      <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="px-4 py-2 rounded-lg border border-neutral-300 text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        className="group relative h-10 w-10 inline-flex items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-900 shadow-sm transition-all hover:bg-neutral-50 hover:border-amber-300 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:bg-white disabled:hover:border-neutral-200"
         aria-label="Page suivante"
       >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-      </button>
-    </div>
+        <ChevronRightIcon className="w-5 h-5 transition-transform group-hover:translate-x-0.5" />
+        
+        {/* Hover effect */}
+        <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-500/0 via-amber-500/0 to-amber-500/0 opacity-0 transition-opacity group-hover:opacity-10" />
+      </motion.button>
+
+      {/* Page Info Badge */}
+      <div className="ml-4 px-4 py-2 rounded-xl bg-neutral-50 border border-neutral-200">
+        <span className="text-sm font-medium text-neutral-600">
+          Page <span className="text-amber-600 font-bold">{currentPage}</span> sur <span className="font-bold">{totalPages}</span>
+        </span>
+      </div>
+    </motion.div>
   );
 }

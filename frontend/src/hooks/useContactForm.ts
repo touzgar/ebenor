@@ -36,7 +36,6 @@ export function useContactForm(): UseContactFormReturn {
         throw new Error(response.message || 'Erreur lors de l\'envoi du message');
       }
     } catch (err) {
-      console.error('Erreur lors de l\'envoi du message:', err);
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
       return false;
     } finally {

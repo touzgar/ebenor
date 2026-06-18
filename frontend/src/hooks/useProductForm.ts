@@ -181,7 +181,6 @@ export function useProductForm({
       // Call the provided onSubmit handler
       await onSubmit(preparedData);
     } catch (error) {
-      console.error('Form submission error:', error);
       throw error;
     }
   });

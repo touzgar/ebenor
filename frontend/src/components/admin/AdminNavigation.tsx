@@ -30,7 +30,7 @@ export function AdminNavigation() {
           setUnreadCount(stats.data.newMessages);
         }
       } catch (error) {
-        console.error('Error fetching message stats:', error);
+        // Error fetching message stats
       }
     };
 
@@ -59,7 +59,7 @@ export function AdminNavigation() {
           setUnreadCount(0);
         }
       } catch (err) {
-        console.error('Error marking messages as read on open:', err);
+        // Error marking messages as read
       }
     };
 

@@ -85,7 +85,6 @@ export function useProducts(options: UseProductsOptions = {}) {
           throw new Error('Erreur lors du chargement des produits');
         }
       } catch (err) {
-        console.error('Erreur lors du chargement des produits:', err);
         setError(err instanceof Error ? err.message : 'Erreur inconnue');
         
         // Fallback vers des produits par défaut en cas d'erreur

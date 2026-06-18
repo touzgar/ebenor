@@ -3,6 +3,7 @@ import authRoutes from './auth';
 import publicRoutes from './public';
 import adminRoutes from './admin';
 import healthRoutes from './health';
+import showroomRoutes from './showroom';
 
 const router = Router();
 
@@ -11,6 +12,9 @@ router.use('/health', healthRoutes);
 
 // Routes d'authentification
 router.use('/auth', authRoutes);
+
+// Showroom content route
+router.use('/showroom', showroomRoutes);
 
 // Routes publiques
 router.use('/', publicRoutes);

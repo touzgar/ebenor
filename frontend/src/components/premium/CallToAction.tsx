@@ -4,36 +4,125 @@ import { motion } from 'framer-motion';
 import { useInView } from 'framer-motion';
 import { useRef, useEffect, useState } from 'react';
 import { HiPhone, HiMail, HiLocationMarker } from 'react-icons/hi';
-import { useHomeContent } from '@/hooks/useHomeContent';
+import Link from 'next/link';
+
+interface CTAContent {
+  badge: string;
+  title: string;
+  titleHighlight: string;
+  description: string;
+  button1Text: string;
+  button1Link: string;
+  button2Text: string;
+  button2Link: string;
+  phone: string;
+  email: string;
+  address: string;
+  backgroundImage: string;
+  stats: Array<{
+    icon: string;
+    number: string;
+    label: string;
+  }>;
+}
+
+const defaultContent: CTAContent = {
+  badge: 'Votre Projet Nous Attend',
+  title: 'Créons ensemble',
+  titleHighlight: 'l\'exception',
+  description: 'Transformez vos espaces avec l\'expertise ÉBÉNOR CRÉATION. Chaque projet est une œuvre unique, conçue avec passion et réalisée avec excellence.',
+  button1Text: 'Devis gratuit en 24h',
+  button1Link: '/contact',
+  button2Text: 'Visiter notre showroom',
+  button2Link: '/showroom',
+  phone: '+216 70 123 456',
+  email: 'contact@ebenor-creation.tn',
+  address: 'Zone Industrielle Mghira 2, 2082 Fouchana, Tunis, Tunisie',
+  backgroundImage: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2400&q=90',
+  stats: [
+    { icon: '🏆', number: '25+', label: 'Années d\'expérience' },
+    { icon: '🏠', number: '500+', label: 'Projets réalisés' },
+    { icon: '⭐', number: '100%', label: 'Satisfaction client' },
+    { icon: '⚡', number: '24h', label: 'Délai de réponse' },
+  ],
+};
 
 export function CallToAction() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: '-100px' });
-  const { content } = useHomeContent();
+  const [content, setContent] = useState<CTAContent>(defaultContent);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    
+    const loadContent = () => {
+      try {
+        const saved = localStorage.getItem('homepage_content');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.cta) {
+            console.log('📞 CallToAction: Loading from localStorage');
+            setContent({
+              ...defaultContent,
+              ...parsed.cta,
+              stats: parsed.cta.stats || defaultContent.stats
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading CTA content:', error);
+      }
+    };
+
+    loadContent();
+
+    // Listen for updates
+    const handleUpdate = () => {
+      console.log('🔄 CallToAction: Received update event');
+      loadContent();
+    };
+
+    window.addEventListener('homepage_content_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel('homepage_updates');
+      channel.addEventListener('message', (event) => {
+        if (event.data.type === 'update' && event.data.data.cta) {
+          console.log('📡 CallToAction: Received BroadcastChannel update');
+          setContent({
+            ...defaultContent,
+            ...event.data.data.cta,
+            stats: event.data.data.cta.stats || defaultContent.stats
+          });
+        }
+      });
+    } catch (e) {
+      // BroadcastChannel not supported
+    }
+
+    return () => {
+      window.removeEventListener('homepage_content_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+      if (channel) {
+        channel.close();
+      }
+    };
   }, []);
 
-  // Default contact info for loading state
-  const contactInfo = content?.contact || {
-    phone: '+216 70 123 456',
-    email: 'contact@ebenor-creation.tn',
-    address: 'Zone Industrielle, Tunis, Tunisie'
-  };
-
   return (
-    <section className="relative py-32 lg:py-40 overflow-hidden" ref={ref}>
+    <section className="relative py-32 lg:py-40 overflow-hidden" ref={ref} suppressHydrationWarning>
       {/* Background Image - Full Coverage */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0" key={content.backgroundImage}>
         <div
           className="w-full h-full bg-cover bg-center bg-fixed"
           style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2400&q=90')`
+            backgroundImage: `url('${content.backgroundImage}')`
           }}
         />
-        {/* Dark overlay replaced with a lighter simple overlay to keep text readable */}
+        {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/60" />
       </div>
 
@@ -52,7 +141,7 @@ export function CallToAction() {
               transition={{ delay: 0.2, duration: 0.6 }}
               className="inline-block px-4 py-2 bg-[#C9A14A]/20 backdrop-blur-sm rounded-full border border-[#C9A14A]/30 text-[#C9A14A] font-semibold tracking-wider uppercase text-sm mb-6"
             >
-              Votre Projet Nous Attend
+              {content.badge}
             </motion.span>
             
             <motion.h2
@@ -61,9 +150,9 @@ export function CallToAction() {
               transition={{ delay: 0.3, duration: 0.6 }}
               className="text-5xl md:text-6xl lg:text-7xl font-serif mb-6 leading-tight"
             >
-              Créons ensemble
+              {content.title}
               <br />
-              <span className="text-[#C9A14A]">l'exception</span>
+              <span className="text-[#C9A14A]">{content.titleHighlight}</span>
             </motion.h2>
 
             <motion.p
@@ -72,8 +161,7 @@ export function CallToAction() {
               transition={{ delay: 0.4, duration: 0.6 }}
               className="text-xl text-gray-200 mb-10 leading-relaxed max-w-xl"
             >
-              Transformez vos espaces avec l'expertise ÉBÉNOR CRÉATION. 
-              Chaque projet est une œuvre unique, conçue avec passion et réalisée avec excellence.
+              {content.description}
             </motion.p>
 
             <motion.div
@@ -82,13 +170,17 @@ export function CallToAction() {
               transition={{ delay: 0.5, duration: 0.6 }}
               className="flex flex-col sm:flex-row gap-4 mb-10"
             >
-              <button className="bg-gradient-to-r from-[#C9A14A] to-[#D4B55A] text-black px-10 py-5 rounded-full font-semibold text-lg hover:shadow-2xl hover:shadow-[#C9A14A]/40 transition-all duration-300 transform hover:scale-105">
-                Devis gratuit en 24h
-              </button>
+              <Link href={content.button1Link}>
+                <button className="bg-gradient-to-r from-[#C9A14A] to-[#D4B55A] text-black px-10 py-5 rounded-full font-semibold text-lg hover:shadow-2xl hover:shadow-[#C9A14A]/40 transition-all duration-300 transform hover:scale-105 w-full sm:w-auto">
+                  {content.button1Text}
+                </button>
+              </Link>
               
-              <button className="border-2 border-white text-white px-10 py-5 rounded-full font-semibold text-lg hover:bg-white hover:text-black transition-all duration-300 backdrop-blur-sm">
-                Visiter notre showroom
-              </button>
+              <Link href={content.button2Link}>
+                <button className="border-2 border-white text-white px-10 py-5 rounded-full font-semibold text-lg hover:bg-white hover:text-black transition-all duration-300 backdrop-blur-sm w-full sm:w-auto">
+                  {content.button2Text}
+                </button>
+              </Link>
             </motion.div>
 
             {/* Contact Info */}
@@ -99,35 +191,30 @@ export function CallToAction() {
                 transition={{ delay: 0.6, duration: 0.6 }}
                 className="space-y-4 bg-black/30 backdrop-blur-md rounded-2xl p-6 border border-white/10"
               >
-                <div className="flex items-center text-gray-200 hover:text-white transition-colors">
+                <a href={`tel:${content.phone}`} className="flex items-center text-gray-200 hover:text-white transition-colors">
                   <HiPhone className="w-6 h-6 text-[#C9A14A] mr-4" />
-                  <span className="text-lg">{contactInfo.phone}</span>
-                </div>
-                <div className="flex items-center text-gray-200 hover:text-white transition-colors">
+                  <span className="text-lg">{content.phone}</span>
+                </a>
+                <a href={`mailto:${content.email}`} className="flex items-center text-gray-200 hover:text-white transition-colors">
                   <HiMail className="w-6 h-6 text-[#C9A14A] mr-4" />
-                  <span className="text-lg">{contactInfo.email}</span>
-                </div>
+                  <span className="text-lg">{content.email}</span>
+                </a>
                 <div className="flex items-center text-gray-200 hover:text-white transition-colors">
-                  <HiLocationMarker className="w-6 h-6 text-[#C9A14A] mr-4" />
-                  <span className="text-lg">{contactInfo.address}</span>
+                  <HiLocationMarker className="w-6 h-6 text-[#C9A14A] mr-4 flex-shrink-0" />
+                  <span className="text-lg">{content.address}</span>
                 </div>
               </motion.div>
             )}
           </motion.div>
 
-          {/* Stats/Features - Bigger */}
+          {/* Stats/Features */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
             className="grid grid-cols-2 gap-6"
           >
-            {[
-              { number: '25+', label: 'Années d\'expérience', icon: '🏆' },
-              { number: '500+', label: 'Projets réalisés', icon: '🏠' },
-              { number: '100%', label: 'Satisfaction client', icon: '⭐' },
-              { number: '24h', label: 'Délai de réponse', icon: '⚡' }
-            ].map((stat, index) => (
+            {(content.stats || defaultContent.stats).map((stat, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, scale: 0.8 }}

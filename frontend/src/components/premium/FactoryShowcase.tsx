@@ -1,39 +1,116 @@
 'use client';
 
 import { motion, useInView } from 'framer-motion';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { HiSparkles, HiLightningBolt, HiCheckCircle, HiStar } from 'react-icons/hi';
+
+interface FactoryContent {
+  title: string;
+  titleHighlight: string;
+  subtitle: string;
+  description: string;
+  backgroundImage: string;
+  video1Url: string;
+  video1Title: string;
+  video1Description: string;
+  video2Url: string;
+  video2Title: string;
+  video2Description: string;
+  stats: Array<{
+    icon: string;
+    value: string;
+    label: string;
+  }>;
+}
+
+const defaultContent: FactoryContent = {
+  title: 'Notre Atelier',
+  titleHighlight: 'de Fabrication',
+  subtitle: 'Un Savoir-Faire Artisanal',
+  description: 'Découvrez l\'excellence de notre savoir-faire artisanal combiné à des technologies de pointe pour créer des pièces uniques qui transforment vos espaces.',
+  backgroundImage: '',
+  video1Url: '/video/demoTravail1.mp4',
+  video1Title: 'Précision Artisanale',
+  video1Description: 'Nos artisans qualifiés travaillent chaque pièce avec une précision millimétrique et une passion inégalée pour créer des œuvres d\'exception.',
+  video2Url: '/video/demoTravail2.mp4',
+  video2Title: 'Technologies Modernes',
+  video2Description: 'Équipements de dernière génération pour garantir une qualité exceptionnelle et une finition parfaite sur chaque projet.',
+  stats: [
+    { icon: '🏆', value: '25+', label: 'Années d\'Expérience' },
+    { icon: '👨‍🔧', value: '50+', label: 'Artisans Qualifiés' },
+    { icon: '🛋️', value: '1000+', label: 'Projets Réalisés' },
+    { icon: '⭐', value: '100%', label: 'Satisfaction Client' },
+  ],
+};
 
 export function FactoryShowcase() {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.3 });
+  const [content, setContent] = useState<FactoryContent>(defaultContent);
+  const [mounted, setMounted] = useState(false);
 
-  const stats = [
-    { 
-      number: '25+', 
-      label: 'Années d\'Expérience',
-      icon: HiStar,
-      color: 'from-amber-500 to-yellow-600'
-    },
-    { 
-      number: '50+', 
-      label: 'Artisans Qualifiés',
-      icon: HiSparkles,
-      color: 'from-orange-500 to-amber-600'
-    },
-    { 
-      number: '1000+', 
-      label: 'Projets Réalisés',
-      icon: HiLightningBolt,
-      color: 'from-yellow-500 to-orange-600'
-    },
-    { 
-      number: '100%', 
-      label: 'Satisfaction Client',
-      icon: HiCheckCircle,
-      color: 'from-amber-600 to-yellow-500'
-    },
-  ];
+  useEffect(() => {
+    setMounted(true);
+    // Load content from localStorage (set by admin panel)
+    const loadContent = () => {
+      try {
+        const saved = localStorage.getItem('homepage_content');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.factory) {
+            setContent(parsed.factory);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading factory content:', error);
+      }
+    };
+
+    loadContent();
+
+    // Listen for updates from admin panel
+    const handleUpdate = () => {
+      loadContent();
+    };
+
+    window.addEventListener('homepage_content_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
+    // Listen to BroadcastChannel for cross-tab updates
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel('homepage_updates');
+      channel.addEventListener('message', (event) => {
+        if (event.data.type === 'update' && event.data.data.factory) {
+          setContent(event.data.data.factory);
+        }
+      });
+    } catch (e) {
+      // BroadcastChannel not supported
+    }
+
+    return () => {
+      window.removeEventListener('homepage_content_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+      if (channel) {
+        channel.close();
+      }
+    };
+  }, []);
+
+  const iconMapping: { [key: string]: any } = {
+    'HiStar': HiStar,
+    'HiSparkles': HiSparkles,
+    'HiLightningBolt': HiLightningBolt,
+    'HiCheckCircle': HiCheckCircle,
+  };
+
+  const stats = content.stats.map((stat, index) => ({
+    number: stat.value,
+    label: stat.label,
+    icon: iconMapping[`Hi${stat.icon.replace(/[^A-Za-z]/g, '')}`] || HiStar,
+    color: ['from-amber-500 to-yellow-600', 'from-orange-500 to-amber-600', 'from-yellow-500 to-orange-600', 'from-amber-600 to-yellow-500'][index % 4]
+  }));
 
   return (
     <section ref={ref} className="py-24 lg:py-32 bg-gradient-to-b from-[#0D0D0D] via-[#1a1a1a] to-[#0D0D0D] relative overflow-hidden" suppressHydrationWarning>
@@ -64,11 +141,10 @@ export function FactoryShowcase() {
           </motion.div>
           
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif text-white mb-6 leading-tight">
-            Notre Atelier de <span className="text-[#C9A14A]">Fabrication</span>
+            {content.title} <span className="text-[#C9A14A]">{content.titleHighlight}</span>
           </h2>
           <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-            Découvrez l'excellence de notre savoir-faire artisanal combiné à des technologies de pointe
-            pour créer des pièces uniques qui transforment vos espaces.
+            {content.description}
           </p>
         </motion.div>
 
@@ -83,13 +159,14 @@ export function FactoryShowcase() {
           >
             <div className="relative aspect-[16/10] rounded-3xl overflow-hidden shadow-2xl shadow-black/50">
               <video
+                key={content.video1Url}
                 autoPlay
                 loop
                 muted
                 playsInline
                 className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
               >
-                <source src="/video/demoTravail1.mp4" type="video/mp4" />
+                <source src={content.video1Url} type="video/mp4" />
               </video>
               
               {/* Gradient Overlay */}
@@ -107,11 +184,10 @@ export function FactoryShowcase() {
                     <span className="text-[#C9A14A] font-semibold text-sm">Artisanat d'Excellence</span>
                   </div>
                   <h3 className="text-3xl lg:text-4xl font-serif text-white mb-3 leading-tight">
-                    Précision Artisanale
+                    {content.video1Title}
                   </h3>
                   <p className="text-gray-200 text-lg leading-relaxed max-w-md">
-                    Nos artisans qualifiés travaillent chaque pièce avec une précision millimétrique 
-                    et une passion inégalée pour créer des œuvres d'exception.
+                    {content.video1Description}
                   </p>
                 </motion.div>
               </div>
@@ -135,13 +211,14 @@ export function FactoryShowcase() {
           >
             <div className="relative aspect-[16/10] rounded-3xl overflow-hidden shadow-2xl shadow-black/50">
               <video
+                key={content.video2Url}
                 autoPlay
                 loop
                 muted
                 playsInline
                 className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700"
               >
-                <source src="/video/demoTravail2.mp4" type="video/mp4" />
+                <source src={content.video2Url} type="video/mp4" />
               </video>
               
               {/* Gradient Overlay */}
@@ -159,11 +236,10 @@ export function FactoryShowcase() {
                     <span className="text-[#C9A14A] font-semibold text-sm">Innovation Technologique</span>
                   </div>
                   <h3 className="text-3xl lg:text-4xl font-serif text-white mb-3 leading-tight">
-                    Technologies Modernes
+                    {content.video2Title}
                   </h3>
                   <p className="text-gray-200 text-lg leading-relaxed max-w-md">
-                    Équipements de dernière génération pour garantir une qualité exceptionnelle 
-                    et une finition parfaite sur chaque projet.
+                    {content.video2Description}
                   </p>
                 </motion.div>
               </div>

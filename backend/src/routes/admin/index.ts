@@ -7,6 +7,7 @@ import mediaRoutes from './media';
 import auditRoutes from './audit';
 import messageRoutes from './messages';
 import categoryRoutes from './categories';
+import uploadRoutes from './upload';
 
 const router = Router();
 
@@ -33,5 +34,8 @@ router.use('/audit', auditRoutes);
 
 // Admin message routes
 router.use('/messages', messageRoutes);
+
+// Admin upload routes
+router.use('/upload', uploadRoutes);
 
 export default router;

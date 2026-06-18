@@ -3,13 +3,8 @@ import { Inter, Playfair_Display } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import { Providers } from '@/components/providers/Providers';
-import { suppressConsoleInProduction } from '@/lib/suppressConsole';
+import '@/utils/filterBrowserErrors'; // Filter browser extension errors
 import '@/utils/suppressWarnings'; // Suppress non-critical warnings in development
-
-// Suppress console logs in production
-if (typeof window !== 'undefined') {
-  suppressConsoleInProduction();
-}
 
 const inter = Inter({
   subsets: ['latin'],
@@ -90,13 +85,38 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${inter.variable} ${playfair.variable}`}>
       <head>
+        {/* Suppress console logs ASAP - Load before any other scripts */}
         <Script
-          id="silence-console"
+          id="suppress-console"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
-(function(){var n=function(){};window.console={log:n,warn:n,error:n,info:n,debug:n,trace:n,table:n,dir:n,dirxml:n,group:n,groupCollapsed:n,groupEnd:n,time:n,timeEnd:n,timeLog:n,timeStamp:n,count:n,countReset:n,assert:n,clear:n,profile:n,profileEnd:n};window.addEventListener('error',function(e){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return false},true);window.addEventListener('unhandledrejection',function(e){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return false},true);window.addEventListener('rejectionhandled',function(e){e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();return false},true);window.onerror=function(){return true};window.onunhandledrejection=function(){return true};try{Object.defineProperty(window,'console',{value:window.console,writable:false,configurable:false})}catch(e){}})();
-            `.trim()
+              (function() {
+                'use strict';
+                const noop = function() {};
+                const noopConsole = {
+                  log: noop, warn: noop, error: noop, info: noop, debug: noop,
+                  trace: noop, table: noop, dir: noop, dirxml: noop, group: noop,
+                  groupCollapsed: noop, groupEnd: noop, time: noop, timeEnd: noop,
+                  timeLog: noop, timeStamp: noop, count: noop, countReset: noop,
+                  assert: noop, clear: noop, profile: noop, profileEnd: noop,
+                };
+                
+                if (typeof window !== 'undefined') {
+                  window.console = noopConsole;
+                  window.onerror = function() { return true; };
+                  window.onunhandledrejection = function() { return true; };
+                  
+                  try {
+                    Object.defineProperty(window, 'console', {
+                      value: noopConsole,
+                      writable: false,
+                      configurable: false
+                    });
+                  } catch (e) {}
+                }
+              })();
+            `,
           }}
         />
       </head>

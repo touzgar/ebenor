@@ -1,5 +1,23 @@
+/**
+ * PREMIUM FOOTER COMPONENT
+ * 
+ * Footer élaboré utilisé sur la page d'accueil avec :
+ * - Image de fond avec overlay
+ * - Design premium avec animations
+ * - Toutes les sections configurables
+ * 
+ * 🔄 SYNCHRONISÉ avec le Footer Public via localStorage (clé: 'footer_content')
+ * 📝 Géré depuis : /admin/homepage/footer
+ * 
+ * Mise à jour automatique en temps réel :
+ * - Custom events pour le même onglet
+ * - BroadcastChannel pour les autres onglets
+ * - Storage events pour la synchronisation cross-tab
+ */
+
 "use client";
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { HiPhone, HiMail, HiLocationMarker } from 'react-icons/hi';
@@ -42,15 +60,142 @@ const socialLinks = [
 export function Footer() {
   const currentYear = new Date().getFullYear();
   const { content } = useHomeContent();
+  
+  // Load custom footer content
+  const [footerContent, setFooterContent] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Wait for client-side mounting
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    const loadFooterContent = () => {
+      const saved = localStorage.getItem('footer_content');
+      if (saved) {
+        try {
+          setFooterContent(JSON.parse(saved));
+        } catch (error) {
+          // Use default content
+        }
+      }
+    };
+
+    loadFooterContent();
+
+    // Method 1: Listen for custom event (same tab)
+    const handleUpdate = () => loadFooterContent();
+    window.addEventListener('footer_content_updated', handleUpdate);
+    
+    // Method 2: Listen for storage events (cross-tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'footer_content') {
+        loadFooterContent();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Method 3: BroadcastChannel for real-time updates
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel('footer_updates');
+      channel.onmessage = (event) => {
+        if (event.data.type === 'update') {
+          setFooterContent(event.data.data);
+        }
+      };
+    } catch (e) {
+      // BroadcastChannel not supported
+    }
+
+    return () => {
+      window.removeEventListener('footer_content_updated', handleUpdate);
+      window.removeEventListener('storage', handleStorageChange);
+      if (channel) {
+        channel.close();
+      }
+    };
+  }, [mounted]);
+
+  // Use custom content if available, otherwise use defaults from admin page
+  const brandDescription = mounted && footerContent?.brand?.description 
+    ? footerContent.brand.description 
+    : 'ÉBÉNOR CRÉATION - Votre partenaire de confiance pour la menuiserie et l\'ébénisterie d\'excellence en Tunisie. Depuis notre atelier, nous créons des pièces uniques alliant tradition artisanale et design contemporain.';
+  
+  const contactInfo = mounted && footerContent?.contact 
+    ? footerContent.contact 
+    : {
+      phone: '+216 XX XXX XXX',
+      email: 'contact@ebenor-creation.tn',
+      address: 'Tunisie',
+      whatsapp: '+216XXXXXXXX'
+    };
+  
+  const socialLinks = [
+    { name: 'Facebook', icon: FaFacebook, href: mounted && footerContent?.social?.facebook ? footerContent.social.facebook : 'https://www.facebook.com/ebenorcreation' },
+    { name: 'Instagram', icon: FaInstagram, href: mounted && footerContent?.social?.instagram ? footerContent.social.instagram : 'https://www.instagram.com/ebenorcreation' },
+    { name: 'LinkedIn', icon: FaLinkedin, href: mounted && footerContent?.social?.linkedin ? footerContent.social.linkedin : 'https://www.linkedin.com/company/ebenorcreation' },
+  ];
+  
+  const defaultNavigation = {
+    company: [
+      { name: 'Accueil', href: '/' },
+      { name: 'À propos', href: '/a-propos' },
+      { name: 'Nos Produits', href: '/produits' },
+      { name: 'Galerie', href: '/galerie' },
+      { name: 'Contact', href: '/contact' },
+    ],
+    services: [
+      { name: 'Cuisines équipées', href: '/produits' },
+      { name: 'Dressings & Placards', href: '/produits' },
+      { name: 'Mobilier sur mesure', href: '/produits' },
+      { name: 'Aménagements intérieurs', href: '/produits' },
+    ],
+    support: [
+      { name: 'Demander un devis gratuit', href: '/contact' },
+      { name: 'Nous contacter', href: '/contact' },
+    ],
+    legal: [
+      { name: 'Mentions légales', href: '/contact' },
+      { name: 'Conditions générales', href: '/contact' },
+    ]
+  };
+  
+  const navigationData = mounted && footerContent?.navigation 
+    ? footerContent.navigation 
+    : defaultNavigation;
+  
+  const newsletterData = mounted && footerContent?.newsletter 
+    ? footerContent.newsletter 
+    : {
+      title: 'Restez informé',
+      description: 'Recevez nos dernières réalisations et nouveautés en exclusivité.'
+    };
+  
+  const bottomData = mounted && footerContent?.bottom 
+    ? footerContent.bottom 
+    : {
+      copyright: 'ÉBÉNOR CRÉATION. Tous droits réservés.',
+      additionalText: 'Artisanat tunisien d\'excellence'
+    };
+  
+  // Get background image from footer content or use default
+  const backgroundImage = mounted && footerContent?.backgroundImage 
+    ? footerContent.backgroundImage 
+    : 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2400&q=90';
 
   return (
     <footer className="relative text-white overflow-hidden" role="contentinfo" aria-label="Pied de page du site">
-      {/* Background Image - FULL COVERAGE */}
+      {/* Background Image - FULL COVERAGE - Dynamic from Admin */}
       <div className="absolute inset-0 z-0">
         <div
+          key={backgroundImage}
           className="w-full h-full bg-cover bg-center bg-fixed"
           style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-4.0.3&auto=format&fit=crop&w=2400&q=90')`
+            backgroundImage: `url('${backgroundImage}')`
           }}
         />
         {/* Simple overlay for text readability */}
@@ -60,9 +205,9 @@ export function Footer() {
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Footer Content */}
         <div className="py-16 lg:py-20">
-          <div className="grid lg:grid-cols-4 gap-12">
-            {/* Brand Section */}
-            <div className="lg:col-span-1">
+          <div className="grid lg:grid-cols-5 gap-8 lg:gap-12">
+            {/* Brand Section - Takes 2 columns */}
+            <div className="lg:col-span-2">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -71,7 +216,7 @@ export function Footer() {
               >
                 <Link href="/" className="inline-block mb-6 focus-visible-enhanced rounded" aria-label="ÉBÉNOR CRÉATION - Retour à l'accueil">
                   <img
-                    src="/logo/logo.png"
+                    src="/logo/logo.jpg"
                     alt="ÉBÉNOR CRÉATION - Logo"
                     width={180}
                     height={60}
@@ -80,33 +225,30 @@ export function Footer() {
                 </Link>
                 
                 <p className="text-gray-400 mb-6 leading-relaxed">
-                  Créateur d'espaces d'exception en Tunisie depuis plus de 25 ans. 
-                  Nous transformons vos rêves en réalité avec passion et savoir-faire.
+                  {brandDescription}
                 </p>
 
                 {/* Contact Info - Dynamic */}
-                {content?.contact && (
-                  <div className="space-y-3 mb-6">
-                    <div className="flex items-center text-gray-400">
-                      <HiPhone className="w-5 h-5 text-[#C9A14A] mr-3 flex-shrink-0" aria-hidden="true" />
-                      <a href={`tel:${content.contact.phone}`} className="hover:text-white transition-colors focus-visible-enhanced rounded">
-                        {content.contact.phone}
-                      </a>
-                    </div>
-                    <div className="flex items-center text-gray-400">
-                      <HiMail className="w-5 h-5 text-[#C9A14A] mr-3 flex-shrink-0" aria-hidden="true" />
-                      <a href={`mailto:${content.contact.email}`} className="hover:text-white transition-colors focus-visible-enhanced rounded">
-                        {content.contact.email}
-                      </a>
-                    </div>
-                    <div className="flex items-start text-gray-400">
-                      <HiLocationMarker className="w-5 h-5 text-[#C9A14A] mr-3 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                      <address className="not-italic">
-                        {content.contact.address}
-                      </address>
-                    </div>
+                <div className="space-y-3 mb-6">
+                  <div className="flex items-center text-gray-400">
+                    <HiPhone className="w-5 h-5 text-[#C9A14A] mr-3 flex-shrink-0" aria-hidden="true" />
+                    <a href={`tel:${contactInfo.phone}`} className="hover:text-white transition-colors focus-visible-enhanced rounded">
+                      {contactInfo.phone}
+                    </a>
                   </div>
-                )}
+                  <div className="flex items-center text-gray-400">
+                    <HiMail className="w-5 h-5 text-[#C9A14A] mr-3 flex-shrink-0" aria-hidden="true" />
+                    <a href={`mailto:${contactInfo.email}`} className="hover:text-white transition-colors focus-visible-enhanced rounded">
+                      {contactInfo.email}
+                    </a>
+                  </div>
+                  <div className="flex items-start text-gray-400">
+                    <HiLocationMarker className="w-5 h-5 text-[#C9A14A] mr-3 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                    <address className="not-italic">
+                      {contactInfo.address}
+                    </address>
+                  </div>
+                </div>
 
                 {/* Social Links */}
                 <div className="flex space-x-4" role="list" aria-label="Réseaux sociaux">
@@ -131,64 +273,19 @@ export function Footer() {
               </motion.div>
             </div>
 
-            {/* Navigation Sections */}
-            <div className="lg:col-span-3 grid md:grid-cols-3 gap-8">
-              {/* Company */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
-                viewport={{ once: true }}
-              >
-                <h3 className="text-lg font-semibold mb-6 text-[#C9A14A]">Entreprise</h3>
-                <ul className="space-y-3" role="list">
-                  {navigation.company.map((item) => (
-                    <li key={item.name}>
-                      <Link
-                        href={item.href}
-                        className="text-gray-400 hover:text-white transition-colors duration-300 focus-visible-enhanced rounded"
-                      >
-                        {item.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-
-              {/* Services */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                viewport={{ once: true }}
-              >
-                <h3 className="text-lg font-semibold mb-6 text-[#C9A14A]">Services</h3>
-                <ul className="space-y-3" role="list">
-                  {navigation.services.map((item) => (
-                    <li key={item.name}>
-                      <Link
-                        href={item.href}
-                        className="text-gray-400 hover:text-white transition-colors duration-300 focus-visible-enhanced rounded"
-                      >
-                        {item.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-
-              {/* Support & Legal */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-                viewport={{ once: true }}
-                className="space-y-8"
-              >
-                <div>
-                  <h3 className="text-lg font-semibold mb-6 text-[#C9A14A]">Support</h3>
+            {/* Navigation Sections - Takes 3 columns */}
+            <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-3 gap-8">
+              {/* Navigation */}
+              {navigationData.company && navigationData.company.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <h3 className="text-lg font-semibold mb-6 text-[#C9A14A]">Navigation</h3>
                   <ul className="space-y-3" role="list">
-                    {navigation.support.map((item) => (
+                    {navigationData.company.map((item: any) => (
                       <li key={item.name}>
                         <Link
                           href={item.href}
@@ -199,24 +296,124 @@ export function Footer() {
                       </li>
                     ))}
                   </ul>
-                </div>
+                </motion.div>
+              )}
 
-                <div>
-                  <h3 className="text-lg font-semibold mb-6 text-[#C9A14A]">Légal</h3>
+              {/* Services */}
+              {navigationData.services && navigationData.services.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  viewport={{ once: true }}
+                >
+                  <h3 className="text-lg font-semibold mb-6 text-[#C9A14A]">Services</h3>
                   <ul className="space-y-3" role="list">
-                    {navigation.legal.map((item) => (
+                    {navigationData.services.map((item: any) => (
                       <li key={item.name}>
                         <Link
                           href={item.href}
-                          className="text-gray-400 hover:text-white transition-colors duration-300 text-sm focus-visible-enhanced rounded"
+                          className="text-gray-400 hover:text-white transition-colors duration-300 focus-visible-enhanced rounded"
                         >
                           {item.name}
                         </Link>
                       </li>
                     ))}
                   </ul>
-                </div>
-              </motion.div>
+                </motion.div>
+              )}
+
+              {/* Business Hours */}
+              {mounted && footerContent?.businessHours?.enabled && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.3 }}
+                  viewport={{ once: true }}
+                >
+                  <h3 className="text-lg font-semibold mb-6 text-[#C9A14A]">
+                    {footerContent.businessHours.title}
+                  </h3>
+                  <ul className="space-y-3" role="list">
+                    {footerContent.businessHours.schedule.map((item: any, idx: number) => (
+                      <li key={idx} className="text-gray-400 text-sm">
+                        <div className="flex flex-col">
+                          <span className="font-medium text-gray-300">{item.days}</span>
+                          <span className="text-[#C9A14A]">{item.hours}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
+
+              {/* Certifications */}
+              {mounted && footerContent?.certifications?.enabled && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.4 }}
+                  viewport={{ once: true }}
+                >
+                  <h3 className="text-lg font-semibold mb-6 text-[#C9A14A]">
+                    {footerContent.certifications.title}
+                  </h3>
+                  <ul className="space-y-3" role="list">
+                    {footerContent.certifications.items.map((item: any, idx: number) => (
+                      <li key={idx} className="text-gray-400 flex items-center gap-2">
+                        <span className="text-xl">{item.icon}</span>
+                        <span className="text-sm">{item.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
+
+              {/* Payment Methods */}
+              {mounted && footerContent?.paymentMethods?.enabled && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.5 }}
+                  viewport={{ once: true }}
+                >
+                  <h3 className="text-lg font-semibold mb-6 text-[#C9A14A]">
+                    {footerContent.paymentMethods.title}
+                  </h3>
+                  <ul className="space-y-2" role="list">
+                    {footerContent.paymentMethods.methods.map((method: string, idx: number) => (
+                      <li key={idx} className="text-gray-400 text-sm flex items-center gap-2">
+                        <span className="text-[#C9A14A]">✓</span>
+                        <span>{method}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
+
+              {/* Support */}
+              {navigationData.support && navigationData.support.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.6 }}
+                  viewport={{ once: true }}
+                >
+                  <h3 className="text-lg font-semibold mb-6 text-[#C9A14A]">Support</h3>
+                  <ul className="space-y-3" role="list">
+                    {navigationData.support.map((item: any) => (
+                      <li key={item.name}>
+                        <Link
+                          href={item.href}
+                          className="text-gray-400 hover:text-white transition-colors duration-300 focus-visible-enhanced rounded"
+                        >
+                          {item.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </motion.div>
+              )}
             </div>
           </div>
         </div>
@@ -231,9 +428,9 @@ export function Footer() {
         >
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
-              <h3 className="text-2xl font-serif mb-2">Restez informé</h3>
+              <h3 className="text-2xl font-serif mb-2">{newsletterData.title}</h3>
               <p className="text-gray-300">
-                Recevez nos dernières créations et actualités directement dans votre boîte mail.
+                {newsletterData.description}
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4">
@@ -267,10 +464,10 @@ export function Footer() {
         >
           <div className="flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-300 text-sm">
-              © {currentYear} ÉBÉNOR CRÉATION. Tous droits réservés.
+              © {currentYear} {bottomData.copyright}
             </p>
             <div className="flex items-center space-x-6 mt-4 md:mt-0">
-              <span className="text-gray-300 text-sm">Fait avec ❤️ en Tunisie</span>
+              <span className="text-gray-300 text-sm">{bottomData.additionalText}</span>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span className="text-gray-300 text-sm">Service client disponible</span>

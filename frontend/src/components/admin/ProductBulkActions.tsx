@@ -83,7 +83,6 @@ export default function ProductBulkActions({
         onClear();
       }
     } catch (error) {
-      console.error('Bulk operation error:', error);
       showNotification(
         'error',
         error instanceof Error ? error.message : 'Une erreur est survenue'

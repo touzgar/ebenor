@@ -78,7 +78,6 @@ export function useProductStats() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        console.log('🔄 Fetching product stats (refreshKey:', refreshKey, ')');
         setLoading(true);
         const response = await fetch(`${API_BASE_URL}/products/stats?_t=${Date.now()}`, {
           method: 'GET',
@@ -93,12 +92,10 @@ export function useProductStats() {
         }
 
         const data = await response.json();
-        console.log('📊 Product stats updated:', data.data);
         setStats(data.data);
         setError(null);
       } catch (err) {
         setError(err as Error);
-        console.error('Error fetching product stats:', err);
       } finally {
         setLoading(false);
       }
@@ -123,7 +120,6 @@ export function useGalleryStats() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        console.log('🔄 Fetching gallery stats (refreshKey:', refreshKey, ')');
         setLoading(true);
         const response = await fetch(`${API_BASE_URL}/gallery/stats?_t=${Date.now()}`, {
           method: 'GET',
@@ -138,12 +134,10 @@ export function useGalleryStats() {
         }
 
         const data = await response.json();
-        console.log('📊 Gallery stats updated:', data.data);
         setStats(data.data);
         setError(null);
       } catch (err) {
         setError(err as Error);
-        console.error('Error fetching gallery stats:', err);
       } finally {
         setLoading(false);
       }
@@ -171,25 +165,20 @@ export function useMediaStats() {
         const { mediaService } = await import('@/lib/api');
         
         setLoading(true);
-        console.log('🔄 Fetching media stats (refreshKey:', refreshKey, ')');
         
         const response = await mediaService.getStats();
         
         if (response.success && response.data) {
-          console.log('📊 Media stats updated:', response.data);
           setStats(response.data);
           setError(null);
         } else {
           throw new Error('Failed to fetch media stats');
         }
       } catch (err: any) {
-        // Handle auth errors gracefully
         if (err.response?.status === 401) {
-          console.log('⚠️ Media stats: Unauthorized (401) - token may be invalid or expired');
-          setError(null); // Clear error for auth issues (user not logged in)
+          setError(null);
         } else {
           setError(err as Error);
-          console.error('Error fetching media stats:', err);
         }
       } finally {
         setLoading(false);
@@ -215,7 +204,6 @@ export function useProductCategories() {
     const fetchCategories = async () => {
       try {
         setLoading(true);
-        console.log('🔄 Fetching product categories breakdown (refreshKey:', refreshKey, ')');
         const response = await fetch(`${API_BASE_URL}/products/categories/breakdown?_t=${Date.now()}`, {
           method: 'GET',
           headers: {
@@ -229,12 +217,10 @@ export function useProductCategories() {
         }
 
         const data = await response.json();
-        console.log('📊 Product categories updated:', data.data);
         setCategories(data.data);
         setError(null);
       } catch (err) {
         setError(err as Error);
-        console.error('Error fetching product categories:', err);
       } finally {
         setLoading(false);
       }
@@ -310,7 +296,6 @@ export function useRecentUploads() {
         setError(null);
       } catch (err) {
         setError(err as Error);
-        console.error('Error fetching recent uploads:', err);
       } finally {
         setLoading(false);
       }

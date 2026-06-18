@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 
 export interface HomeContent {
   hero: {
+    companyName?: string;
     title: string;
     subtitle: string;
     backgroundImage: string;
@@ -52,7 +53,13 @@ export function useHomeContent() {
       try {
         setLoading(true);
         const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-        const response = await fetch(`${API_BASE_URL}/home`);
+        // Add timestamp to bust cache
+        const timestamp = new Date().getTime();
+        const response = await fetch(`${API_BASE_URL}/home?t=${timestamp}`, {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+          }
+        });
         
         if (!response.ok) {
           throw new Error('Failed to fetch home content');
@@ -62,7 +69,6 @@ export function useHomeContent() {
         setContent(data.data);
         setError(null);
       } catch (err) {
-        console.error('Error fetching home content:', err);
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);

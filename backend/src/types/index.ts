@@ -38,9 +38,11 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
 export interface HomeContent {
   _id?: string;
   hero: {
+    companyName?: string;
     title: string;
     subtitle: string;
-    backgroundImage: string;
+    backgroundImage?: string;
+    videoUrl?: string;
     ctaText: string;
     ctaLink: string;
   };

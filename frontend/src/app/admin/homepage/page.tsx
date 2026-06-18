@@ -33,6 +33,17 @@ export default function HomepageManagementPage() {
 
   const sections = [
     {
+      name: 'Accueil',
+      description: 'Gestion complète de la page d\'accueil : Hero, Atelier, Produits, Galerie, Processus, CTA',
+      href: '/admin/homepage/accueil',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+      ),
+      color: 'from-sky-500 to-sky-600',
+    },
+    {
       name: 'Hero',
       description: 'Bannière principale avec titre, sous-titre et appel à l\'action',
       href: '/admin/homepage/hero',
@@ -44,48 +55,37 @@ export default function HomepageManagementPage() {
       color: 'from-blue-500 to-blue-600',
     },
     {
-      name: 'À propos',
-      description: 'Section de présentation avec titre, description et points forts',
-      href: '/admin/homepage/about',
+      name: 'Showroom',
+      description: 'Contenu de la page Showroom/Produits: titre et sous-titre',
+      href: '/admin/homepage/showroom',
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-      color: 'from-green-500 to-green-600',
-    },
-    {
-      name: 'Services',
-      description: 'Liste des services offerts avec icônes et descriptions',
-      href: '/admin/homepage/services',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-      ),
-      color: 'from-purple-500 to-purple-600',
-    },
-    {
-      name: 'Processus',
-      description: 'Étapes du processus de travail avec timeline',
-      href: '/admin/homepage/process',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
         </svg>
       ),
       color: 'from-amber-500 to-amber-600',
     },
     {
-      name: 'Témoignages',
-      description: 'Avis et témoignages clients avec notes',
-      href: '/admin/homepage/testimonials',
+      name: 'Page À Propos',
+      description: 'Gestion complète de la page À Propos: Hero, Stats, Histoire, Timeline, Valeurs, CTA',
+      href: '/admin/homepage/about',
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
       ),
-      color: 'from-pink-500 to-pink-600',
+      color: 'from-green-500 to-green-600',
+    },
+    {
+      name: 'Nos Projets',
+      description: 'Gestion de la page Galerie: Hero et Call-to-Action',
+      href: '/admin/homepage/projects',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      ),
+      color: 'from-indigo-500 to-indigo-600',
     },
     {
       name: 'Contact',
@@ -122,6 +122,7 @@ export default function HomepageManagementPage() {
 
       {/* Sections Grid - FULL WIDTH */}
       <div className="w-full px-3 sm:px-4 lg:px-6 py-6">
+        {/* Regular Cards Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {sections.map((section, index) => (
             <motion.div

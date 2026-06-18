@@ -50,7 +50,6 @@ export function PublishToggle({ section, initialPublished = false }: PublishTogg
         throw new Error(response.message || 'Erreur lors de la mise à jour');
       }
     } catch (error: any) {
-      console.error('Error toggling publish status:', error);
       setNotification({
         type: 'error',
         message: error.message || 'Une erreur est survenue',

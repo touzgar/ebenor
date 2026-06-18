@@ -18,7 +18,6 @@ export function useFeaturedProducts(limit: number = 6) {
         setProducts(response.data);
       } catch (err) {
         setError(err as Error);
-        console.error('Error fetching featured products:', err);
       } finally {
         setLoading(false);
       }
@@ -46,7 +45,6 @@ export function useFeaturedGallery(limit: number = 12) {
         setImages(response.data);
       } catch (err) {
         setError(err as Error);
-        console.error('Error fetching featured gallery:', err);
       } finally {
         setLoading(false);
       }
@@ -59,7 +57,7 @@ export function useFeaturedGallery(limit: number = 12) {
 }
 
 /**
- * Hook to fetch home content
+ * Hook to fetch home content from API
  */
 export function useHomeContent() {
   const [content, setContent] = useState<any>(null);
@@ -81,7 +79,6 @@ export function useHomeContent() {
         setContent(data.data);
       } catch (err) {
         setError(err as Error);
-        console.error('Error fetching home content:', err);
       } finally {
         setLoading(false);
       }
@@ -91,4 +88,66 @@ export function useHomeContent() {
   }, []);
 
   return { content, loading, error };
+}
+
+/**
+ * Hook to fetch home content from localStorage with real-time updates
+ */
+export function useHomeContentLocal() {
+  const [content, setContent] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    const loadContent = () => {
+      const saved = localStorage.getItem('homepage_content');
+      if (saved) {
+        try {
+          setContent(JSON.parse(saved));
+        } catch (error) {
+          // Use null if parsing fails
+        }
+      }
+    };
+
+    loadContent();
+
+    // Listen for updates
+    const handleUpdate = () => loadContent();
+    window.addEventListener('homepage_content_updated', handleUpdate);
+    
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'homepage_content') {
+        loadContent();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel('homepage_updates');
+      channel.onmessage = (event) => {
+        if (event.data.type === 'update') {
+          setContent(event.data.data);
+        }
+      };
+    } catch (e) {
+      // BroadcastChannel not supported
+    }
+
+    return () => {
+      window.removeEventListener('homepage_content_updated', handleUpdate);
+      window.removeEventListener('storage', handleStorageChange);
+      if (channel) {
+        channel.close();
+      }
+    };
+  }, [mounted]);
+
+  return { content, mounted };
 }

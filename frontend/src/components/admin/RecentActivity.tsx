@@ -77,7 +77,7 @@ export function RecentActivity() {
           setActivities(formattedActivities);
         }
       } catch (error) {
-        console.error('Failed to fetch activities:', error);
+        // Failed to fetch activities
       } finally {
         setLoading(false);
       }

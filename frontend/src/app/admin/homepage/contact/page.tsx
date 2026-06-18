@@ -1,591 +1,570 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
-import { homeService } from '@/lib/api';
-import type { HomeContent } from '@/types';
-import { PublishToggle } from '@/components/admin/PublishToggle';
+import { toast } from '@/lib/toast';
+import {
+  CheckCircleIcon,
+  PencilIcon,
+  ArrowPathIcon,
+} from '@heroicons/react/24/outline';
 
-export default function ContactEditorPage() {
+interface ContactPageContent {
+  hero: {
+    title: string;
+    subtitle: string;
+    description: string;
+  };
+  contactInfo: {
+    address: {
+      line1: string;
+      line2: string;
+    };
+    phone: string;
+    email: string;
+    hours: {
+      weekdays: string;
+      weekdaysTime: string;
+      saturday: string;
+      saturdayTime: string;
+      sunday: string;
+      sundayStatus: string;
+    };
+  };
+  whatsapp: {
+    title: string;
+    description: string;
+    buttonText: string;
+    phoneNumber: string;
+  };
+  map: {
+    title: string;
+    subtitle: string;
+    embedUrl: string;
+  };
+  faq: {
+    title: string;
+    subtitle: string;
+    questions: Array<{
+      question: string;
+      answer: string;
+    }>;
+  };
+}
+
+const defaultContent: ContactPageContent = {
+  hero: {
+    title: 'Contactez-Nous',
+    subtitle: 'Contact',
+    description: 'Prêt à donner vie à votre projet ? Notre équipe d\'artisans passionnés est à votre écoute pour transformer vos idées en réalité.',
+  },
+  contactInfo: {
+    address: {
+      line1: 'Zone Industrielle',
+      line2: 'Tunis, Tunisie',
+    },
+    phone: '+216 XX XXX XXX',
+    email: 'contact@ebenor-creation.tn',
+    hours: {
+      weekdays: 'Lun - Ven',
+      weekdaysTime: '8h00 - 17h00',
+      saturday: 'Samedi',
+      saturdayTime: '8h00 - 12h00',
+      sunday: 'Dimanche',
+      sundayStatus: 'Fermé',
+    },
+  },
+  whatsapp: {
+    title: 'Contact Rapide',
+    description: 'Besoin d\'une réponse immédiate ? Contactez-nous via WhatsApp pour un échange instantané !',
+    buttonText: 'Ouvrir WhatsApp',
+    phoneNumber: '+216XXXXXXXX',
+  },
+  map: {
+    title: 'Notre Localisation',
+    subtitle: 'Zone Industrielle, Tunis - Tunisie',
+    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d102948.82073654844!2d10.08080475!3d36.8064948!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x12fd34cf7c5f06b1%3A0x6b94f7608db567e!2sZone%20Industrielle%2C%20Tunis%2C%20Tunisia!5e0!3m2!1sen!2s!4v1234567890123!5m2!1sen!2s',
+  },
+  faq: {
+    title: 'Questions Fréquentes',
+    subtitle: 'Trouvez rapidement les réponses aux questions les plus courantes',
+    questions: [
+      {
+        question: 'Quel est le délai de fabrication ?',
+        answer: 'Les délais varient selon la complexité du projet, généralement entre 2 à 8 semaines pour les créations sur mesure.',
+      },
+      {
+        question: 'Proposez-vous la livraison ?',
+        answer: 'Oui, nous assurons la livraison et l\'installation dans toute la Tunisie. Les frais dépendent de la distance et du volume.',
+      },
+      {
+        question: 'Quelles essences de bois utilisez-vous ?',
+        answer: 'Nous travaillons avec diverses essences : chêne, hêtre, noyer, acajou, selon vos préférences et le budget.',
+      },
+      {
+        question: 'Comment obtenir un devis ?',
+        answer: 'Contactez-nous avec les détails de votre projet. Nous vous fournirons un devis détaillé gratuit sous 48h.',
+      },
+    ],
+  },
+};
+
+function ContactEditorPage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+  const [content, setContent] = useState<ContactPageContent>(defaultContent);
+  const [isSaving, setIsSaving] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>('hero');
 
-  // Form state
-  const [address, setAddress] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [whatsapp, setWhatsapp] = useState('');
-  const [workingHours, setWorkingHours] = useState('');
-
-  // UI state
-  const [isLoadingContent, setIsLoadingContent] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
-  // Validation errors
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Authentication check
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       router.push('/admin/login');
     }
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, isLoading, router]);
 
-  // Load current contact content
   useEffect(() => {
-    const loadContent = async () => {
-      if (!isAuthenticated || authLoading) {
-        return;
-      }
-
-      setIsLoadingContent(true);
-      setLoadError(null);
-
+    const saved = localStorage.getItem('contact_page_content');
+    if (saved) {
       try {
-        const response = await homeService.getContent();
-
-        if (response.success && response.data) {
-          const content = response.data as HomeContent;
-          
-          if (content.contact) {
-            setAddress(content.contact.address || '');
-            setPhone(content.contact.phone || '');
-            setEmail(content.contact.email || '');
-            setWhatsapp(content.contact.whatsapp || '');
-            setWorkingHours(content.contact.workingHours || '');
-          }
-        } else {
-          throw new Error(response.message || 'Impossible de charger le contenu');
-        }
-      } catch (error: any) {
-        console.error('Error loading content:', error);
-        setLoadError(error.message || 'Une erreur est survenue lors du chargement du contenu');
-      } finally {
-        setIsLoadingContent(false);
+        setContent(JSON.parse(saved));
+      } catch (error) {
+        console.error('Error loading saved content:', error);
       }
-    };
-
-    loadContent();
-  }, [isAuthenticated, authLoading]);
-
-  // Validate email format
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  // Validate phone format (matches backend pattern)
-  const validatePhone = (phone: string): boolean => {
-    // Backend pattern: /^[\+]?[0-9\s\-\(\)]{8,20}$/
-    // Allows: +, digits, spaces, hyphens, parentheses
-    // Total length: 8-20 characters
-    const phoneRegex = /^[\+]?[0-9\s\-\(\)]{8,20}$/;
-    return phoneRegex.test(phone);
-  };
-
-  // Validate form
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    // Address validation
-    if (!address.trim()) {
-      newErrors.address = 'L\'adresse est requise';
-    } else if (address.length < 10) {
-      newErrors.address = 'L\'adresse doit contenir au moins 10 caractères';
-    } else if (address.length > 300) {
-      newErrors.address = 'L\'adresse ne peut pas dépasser 300 caractères';
     }
+  }, []);
 
-    // Phone validation
-    if (!phone.trim()) {
-      newErrors.phone = 'Le numéro de téléphone est requis';
-    } else if (!validatePhone(phone)) {
-      newErrors.phone = 'Le numéro de téléphone n\'est pas valide. Utilisez uniquement +, chiffres, espaces, tirets et parenthèses (8-20 caractères)';
-    }
-
-    // Email validation
-    if (!email.trim()) {
-      newErrors.email = 'L\'email est requis';
-    } else if (!validateEmail(email)) {
-      newErrors.email = 'L\'email n\'est pas valide (ex: contact@example.com)';
-    }
-
-    // WhatsApp validation
-    if (!whatsapp.trim()) {
-      newErrors.whatsapp = 'Le numéro WhatsApp est requis';
-    } else if (!validatePhone(whatsapp)) {
-      newErrors.whatsapp = 'Le numéro WhatsApp n\'est pas valide. Utilisez uniquement +, chiffres, espaces, tirets et parenthèses (8-20 caractères)';
-    }
-
-    // Working hours validation
-    if (!workingHours.trim()) {
-      newErrors.workingHours = 'Les horaires d\'ouverture sont requis';
-    } else if (workingHours.length < 5) {
-      newErrors.workingHours = 'Les horaires doivent contenir au moins 5 caractères';
-    } else if (workingHours.length > 200) {
-      newErrors.workingHours = 'Les horaires ne peuvent pas dépasser 200 caractères';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validate form
-    if (!validateForm()) {
-      setSubmitError('Veuillez corriger les erreurs dans le formulaire');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSubmitError(null);
-
+  const handleSave = async () => {
+    setIsSaving(true);
     try {
-      // Prepare payload
-      const payload = {
-        contact: {
-          address: address.trim(),
-          phone: phone.trim(),
-          email: email.trim(),
-          whatsapp: whatsapp.trim(),
-          workingHours: workingHours.trim(),
-        },
-      };
-
-      const response = await homeService.updateContact(payload.contact);
-
-      if (response.success) {
-        // Show success notification
-        alert('Section contact mise à jour avec succès !');
-
-        // Redirect to dashboard
-        router.push('/admin/dashboard');
-      } else {
-        throw new Error(response.message || 'Erreur lors de la mise à jour');
-      }
-    } catch (error: any) {
-      console.error('Error updating contact section:', error);
-
-      let errorMessage = 'Une erreur est survenue lors de la mise à jour';
-
-      if (error.message) {
-        errorMessage = error.message;
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      }
-
-      setSubmitError(errorMessage);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      localStorage.setItem('contact_page_content', JSON.stringify(content));
+      
+      // Dispatch custom event to notify other tabs/windows
+      window.dispatchEvent(new Event('contact_page_updated'));
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast.success('✅ Page Contact mise à jour avec succès!');
+    } catch (error) {
+      toast.error('❌ Erreur lors de la sauvegarde');
+      console.error(error);
     } finally {
-      setIsSubmitting(false);
+      setIsSaving(false);
     }
   };
 
-  // Loading state
-  if (authLoading || isLoadingContent) {
+  const handleReset = () => {
+    if (confirm('Êtes-vous sûr de vouloir réinitialiser tout le contenu?')) {
+      setContent(defaultContent);
+      localStorage.removeItem('contact_page_content');
+      toast.success('Contenu réinitialisé');
+    }
+  };
+
+  if (isLoading || !isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-neutral-600">
-            {authLoading ? 'Chargement...' : 'Chargement du contenu...'}
-          </p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  const tabs = [
+    { id: 'hero', label: 'Hero' },
+    { id: 'info', label: 'Coordonnées' },
+    { id: 'whatsapp', label: 'WhatsApp' },
+    { id: 'map', label: 'Carte' },
+    { id: 'faq', label: 'FAQ' },
+  ];
 
-  // Error state
-  if (loadError) {
-    return (
-      <div className="min-h-screen bg-neutral-50">
-        <div className="bg-white border-b border-neutral-200">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <h1 className="text-3xl font-bold text-neutral-900">
-              Modifier la section Contact
-            </h1>
+  return (
+    <div className="min-h-screen bg-neutral-50 py-6">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-neutral-900 flex items-center gap-3">
+                <PencilIcon className="h-8 w-8 text-amber-600" />
+                Page Contact - Gestion Complète
+              </h1>
+              <p className="mt-2 text-neutral-600">
+                Modifiez tout le contenu de la page Contact
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={handleReset}
+                className="px-4 py-2 bg-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-300 transition-colors flex items-center gap-2"
+              >
+                <ArrowPathIcon className="h-5 w-5" />
+                Réinitialiser
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={isSaving}
+                className="px-6 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
+                {isSaving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 border border-red-200 rounded-lg p-8 text-center"
-          >
-            <svg className="w-16 h-16 text-red-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <h2 className="text-xl font-semibold text-red-900 mb-2">
-              Erreur de chargement
-            </h2>
-            <p className="text-red-700 mb-6">{loadError}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Réessayer
-            </button>
-          </motion.div>
+        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 mb-6">
+          <div className="flex overflow-x-auto">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSection(tab.id)}
+                className={`px-6 py-4 font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  activeSection === tab.id
+                    ? 'border-amber-600 text-amber-600'
+                    : 'border-transparent text-neutral-600 hover:text-neutral-900'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-    );
-  }
 
-  return (
-    <div className="min-h-screen bg-neutral-50">
-      {/* Header */}
-      <div className="bg-white border-b border-neutral-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="flex items-center justify-between mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
+          {activeSection === 'hero' && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-neutral-900 mb-4">Section Hero</h2>
+              
               <div>
-                <h1 className="text-3xl font-bold text-neutral-900">
-                  Modifier la section Contact
-                </h1>
-                <p className="mt-2 text-neutral-600">
-                  Gérez les informations de contact affichées sur votre site
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Titre</label>
+                <input
+                  type="text"
+                  value={content.hero.title}
+                  onChange={(e) => setContent({ ...content, hero: { ...content.hero, title: e.target.value } })}
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  placeholder="Contactez-Nous"
+                />
+                <p className="text-sm text-neutral-500 mt-2">
+                  💡 Le titre s'affichera exactement comme vous le tapez
                 </p>
               </div>
 
-              <Link
-                href="/admin/dashboard"
-                className="inline-flex items-center px-4 py-2 text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Annuler
-              </Link>
-            </div>
-
-            {/* Publish Toggle */}
-            <PublishToggle section="contact" initialPublished={false} />
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Form */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Error Message */}
-          {submitError && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-red-50 border border-red-200 rounded-lg p-4"
-            >
-              <div className="flex items-start">
-                <svg className="w-5 h-5 text-red-600 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div>
-                  <h3 className="text-sm font-medium text-red-800">Erreur</h3>
-                  <p className="mt-1 text-sm text-red-700">{submitError}</p>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Description</label>
+                <textarea
+                  value={content.hero.description}
+                  onChange={(e) => setContent({ ...content, hero: { ...content.hero, description: e.target.value } })}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  placeholder="Prêt à donner vie à votre projet ?..."
+                />
               </div>
-            </motion.div>
+            </div>
           )}
 
-          {/* Contact Information Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.1 }}
-            className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6"
-          >
-            <h2 className="text-xl font-semibold text-neutral-900 mb-6">
-              Informations de contact
-            </h2>
-
+          {activeSection === 'info' && (
             <div className="space-y-6">
-              {/* Address */}
+              <h2 className="text-2xl font-bold text-neutral-900 mb-4">Nos Coordonnées</h2>
+              
               <div>
-                <label htmlFor="address" className="block text-sm font-medium text-neutral-700 mb-2">
-                  Adresse <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  id="address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  rows={3}
-                  placeholder="Ex: 123 Rue de l'Artisan, 75001 Paris, France"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors resize-none ${
-                    errors.address ? 'border-red-500' : 'border-neutral-300'
-                  }`}
-                  maxLength={300}
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Adresse - Ligne 1</label>
+                <input
+                  type="text"
+                  value={content.contactInfo.address.line1}
+                  onChange={(e) => setContent({ ...content, contactInfo: { ...content.contactInfo, address: { ...content.contactInfo.address, line1: e.target.value } } })}
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                 />
-                <div className="flex items-center justify-between mt-1">
-                  {errors.address && (
-                    <p className="text-sm text-red-600">{errors.address}</p>
-                  )}
-                  <p className="text-xs text-neutral-500 ml-auto">
-                    {address.length}/300 caractères
-                  </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Adresse - Ligne 2</label>
+                <input
+                  type="text"
+                  value={content.contactInfo.address.line2}
+                  onChange={(e) => setContent({ ...content, contactInfo: { ...content.contactInfo, address: { ...content.contactInfo.address, line2: e.target.value } } })}
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">Téléphone</label>
+                  <input
+                    type="text"
+                    value={content.contactInfo.phone}
+                    onChange={(e) => setContent({ ...content, contactInfo: { ...content.contactInfo, phone: e.target.value } })}
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    value={content.contactInfo.email}
+                    onChange={(e) => setContent({ ...content, contactInfo: { ...content.contactInfo, email: e.target.value } })}
+                    className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  />
                 </div>
               </div>
 
-              {/* Phone */}
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-neutral-700 mb-2">
-                  Téléphone <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Ex: +33 1 23 45 67 89"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors ${
-                    errors.phone ? 'border-red-500' : 'border-neutral-300'
-                  }`}
-                />
-                {errors.phone && (
-                  <p className="text-sm text-red-600 mt-1">{errors.phone}</p>
-                )}
-                <p className="text-xs text-neutral-500 mt-2">
-                  <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Format: +, chiffres, espaces, tirets, parenthèses (8-20 caractères). Ex: +33 1 23 45 67 89
-                </p>
-              </div>
+              <div className="border-t pt-6">
+                <h3 className="text-lg font-semibold text-neutral-900 mb-4">Horaires</h3>
+                
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">Jours Semaine (Label)</label>
+                    <select
+                      value={content.contactInfo.hours.weekdays}
+                      onChange={(e) => setContent({ ...content, contactInfo: { ...content.contactInfo, hours: { ...content.contactInfo.hours, weekdays: e.target.value } } })}
+                      className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+                    >
+                      <option value="Lun - Ven">Lun - Ven</option>
+                      <option value="Lundi - Vendredi">Lundi - Vendredi</option>
+                      <option value="Du Lundi au Vendredi">Du Lundi au Vendredi</option>
+                      <option value="Semaine">Semaine</option>
+                      <option value="Jours ouvrables">Jours ouvrables</option>
+                    </select>
+                  </div>
 
-              {/* Email */}
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-neutral-700 mb-2">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Ex: contact@ebenor-creation.com"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors ${
-                    errors.email ? 'border-red-500' : 'border-neutral-300'
-                  }`}
-                />
-                {errors.email && (
-                  <p className="text-sm text-red-600 mt-1">{errors.email}</p>
-                )}
-              </div>
-
-              {/* WhatsApp */}
-              <div>
-                <label htmlFor="whatsapp" className="block text-sm font-medium text-neutral-700 mb-2">
-                  WhatsApp <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="tel"
-                  id="whatsapp"
-                  value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
-                  placeholder="Ex: +33 6 12 34 56 78"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors ${
-                    errors.whatsapp ? 'border-red-500' : 'border-neutral-300'
-                  }`}
-                />
-                {errors.whatsapp && (
-                  <p className="text-sm text-red-600 mt-1">{errors.whatsapp}</p>
-                )}
-                <p className="text-xs text-neutral-500 mt-2">
-                  <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Format: +, chiffres, espaces, tirets, parenthèses (8-20 caractères). Ex: +33 6 12 34 56 78
-                </p>
-              </div>
-
-              {/* Working Hours */}
-              <div>
-                <label htmlFor="workingHours" className="block text-sm font-medium text-neutral-700 mb-2">
-                  Horaires d'ouverture <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  id="workingHours"
-                  value={workingHours}
-                  onChange={(e) => setWorkingHours(e.target.value)}
-                  rows={3}
-                  placeholder="Ex: Lundi - Vendredi: 9h00 - 18h00&#10;Samedi: 10h00 - 16h00&#10;Dimanche: Fermé"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-colors resize-none ${
-                    errors.workingHours ? 'border-red-500' : 'border-neutral-300'
-                  }`}
-                  maxLength={200}
-                />
-                <div className="flex items-center justify-between mt-1">
-                  {errors.workingHours && (
-                    <p className="text-sm text-red-600">{errors.workingHours}</p>
-                  )}
-                  <p className="text-xs text-neutral-500 ml-auto">
-                    {workingHours.length}/200 caractères
-                  </p>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">Horaires Semaine</label>
+                    <input
+                      type="text"
+                      value={content.contactInfo.hours.weekdaysTime}
+                      onChange={(e) => setContent({ ...content, contactInfo: { ...content.contactInfo, hours: { ...content.contactInfo.hours, weekdaysTime: e.target.value } } })}
+                      placeholder="Ex: 8h00 - 17h00"
+                      className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    />
+                  </div>
                 </div>
-              </div>
-            </div>
-          </motion.div>
 
-          {/* Preview Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.2 }}
-            className="bg-white rounded-lg shadow-sm border border-neutral-200 p-6"
-          >
-            <h2 className="text-xl font-semibold text-neutral-900 mb-6">
-              Aperçu
-            </h2>
-
-            <div className="bg-neutral-50 rounded-lg p-8">
-              <div className="max-w-2xl mx-auto">
-                <h3 className="text-2xl font-bold text-neutral-900 mb-8 text-center">
-                  Contactez-nous
-                </h3>
-
-                <div className="space-y-6">
-                  {/* Address Preview */}
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-neutral-900 mb-1">Adresse</h4>
-                      <p className="text-neutral-700 whitespace-pre-wrap">
-                        {address || 'Votre adresse ici'}
-                      </p>
-                    </div>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">Samedi (Label)</label>
+                    <select
+                      value={content.contactInfo.hours.saturday}
+                      onChange={(e) => setContent({ ...content, contactInfo: { ...content.contactInfo, hours: { ...content.contactInfo.hours, saturday: e.target.value } } })}
+                      className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+                    >
+                      <option value="Samedi">Samedi</option>
+                      <option value="Sam">Sam</option>
+                      <option value="Samedi matin">Samedi matin</option>
+                      <option value="Weekend">Weekend</option>
+                    </select>
                   </div>
 
-                  {/* Phone Preview */}
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-neutral-900 mb-1">Téléphone</h4>
-                      <p className="text-neutral-700">
-                        {phone || 'Votre numéro de téléphone ici'}
-                      </p>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">Horaires Samedi</label>
+                    <input
+                      type="text"
+                      value={content.contactInfo.hours.saturdayTime}
+                      onChange={(e) => setContent({ ...content, contactInfo: { ...content.contactInfo, hours: { ...content.contactInfo.hours, saturdayTime: e.target.value } } })}
+                      placeholder="Ex: 8h00 - 12h00"
+                      className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">Dimanche (Label)</label>
+                    <select
+                      value={content.contactInfo.hours.sunday}
+                      onChange={(e) => setContent({ ...content, contactInfo: { ...content.contactInfo, hours: { ...content.contactInfo.hours, sunday: e.target.value } } })}
+                      className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+                    >
+                      <option value="Dimanche">Dimanche</option>
+                      <option value="Dim">Dim</option>
+                      <option value="Dimanche & Jours fériés">Dimanche & Jours fériés</option>
+                    </select>
                   </div>
 
-                  {/* Email Preview */}
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-neutral-900 mb-1">Email</h4>
-                      <p className="text-neutral-700">
-                        {email || 'Votre email ici'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* WhatsApp Preview */}
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-neutral-900 mb-1">WhatsApp</h4>
-                      <p className="text-neutral-700">
-                        {whatsapp || 'Votre numéro WhatsApp ici'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Working Hours Preview */}
-                  <div className="flex items-start gap-4">
-                    <div className="flex-shrink-0 w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-neutral-900 mb-1">Horaires d'ouverture</h4>
-                      <p className="text-neutral-700 whitespace-pre-wrap">
-                        {workingHours || 'Vos horaires d\'ouverture ici'}
-                      </p>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-neutral-700 mb-2">Status Dimanche</label>
+                    <select
+                      value={content.contactInfo.hours.sundayStatus}
+                      onChange={(e) => setContent({ ...content, contactInfo: { ...content.contactInfo, hours: { ...content.contactInfo.hours, sundayStatus: e.target.value } } })}
+                      className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
+                    >
+                      <option value="Fermé">Fermé</option>
+                      <option value="Ouvert">Ouvert</option>
+                      <option value="Sur rendez-vous">Sur rendez-vous</option>
+                      <option value="Uniquement sur RDV">Uniquement sur RDV</option>
+                    </select>
                   </div>
                 </div>
               </div>
             </div>
+          )}
 
-            <p className="text-xs text-neutral-500 mt-3 text-center">
-              <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              Ceci est un aperçu de la section contact telle qu'elle apparaîtra sur votre site
-            </p>
-          </motion.div>
+          {activeSection === 'whatsapp' && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-neutral-900 mb-4">Contact WhatsApp</h2>
+              
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Titre</label>
+                <input
+                  type="text"
+                  value={content.whatsapp.title}
+                  onChange={(e) => setContent({ ...content, whatsapp: { ...content.whatsapp, title: e.target.value } })}
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                />
+              </div>
 
-          {/* Form Actions */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: 0.3 }}
-            className="flex items-center justify-end gap-4"
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Description</label>
+                <textarea
+                  value={content.whatsapp.description}
+                  onChange={(e) => setContent({ ...content, whatsapp: { ...content.whatsapp, description: e.target.value } })}
+                  rows={3}
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Texte du Bouton</label>
+                <input
+                  type="text"
+                  value={content.whatsapp.buttonText}
+                  onChange={(e) => setContent({ ...content, whatsapp: { ...content.whatsapp, buttonText: e.target.value } })}
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Numéro WhatsApp (avec code pays)</label>
+                <input
+                  type="text"
+                  value={content.whatsapp.phoneNumber}
+                  onChange={(e) => setContent({ ...content, whatsapp: { ...content.whatsapp, phoneNumber: e.target.value } })}
+                  placeholder="+216XXXXXXXX"
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                />
+                <p className="text-sm text-neutral-500 mt-2">Format: +216XXXXXXXX (sans espaces)</p>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'map' && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-neutral-900 mb-4">Carte Google Maps</h2>
+              
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Titre</label>
+                <input
+                  type="text"
+                  value={content.map.title}
+                  onChange={(e) => setContent({ ...content, map: { ...content.map, title: e.target.value } })}
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Sous-titre</label>
+                <input
+                  type="text"
+                  value={content.map.subtitle}
+                  onChange={(e) => setContent({ ...content, map: { ...content.map, subtitle: e.target.value } })}
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">URL d'intégration Google Maps</label>
+                <textarea
+                  value={content.map.embedUrl}
+                  onChange={(e) => setContent({ ...content, map: { ...content.map, embedUrl: e.target.value } })}
+                  rows={4}
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent font-mono text-sm"
+                  placeholder="https://www.google.com/maps/embed?pb=..."
+                />
+                <p className="text-sm text-neutral-500 mt-2">
+                  Allez sur Google Maps → Cliquez sur "Partager" → "Intégrer une carte" → Copiez l'URL
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'faq' && (
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold text-neutral-900 mb-4">Questions Fréquentes (FAQ)</h2>
+              
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Titre</label>
+                <input
+                  type="text"
+                  value={content.faq.title}
+                  onChange={(e) => setContent({ ...content, faq: { ...content.faq, title: e.target.value } })}
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 mb-2">Sous-titre</label>
+                <input
+                  type="text"
+                  value={content.faq.subtitle}
+                  onChange={(e) => setContent({ ...content, faq: { ...content.faq, subtitle: e.target.value } })}
+                  className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                />
+              </div>
+
+              <div className="space-y-4">
+                {content.faq.questions.map((faq, index) => (
+                  <div key={index} className="border border-neutral-200 rounded-lg p-4 space-y-3 bg-neutral-50">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="px-3 py-1 bg-amber-100 text-amber-800 font-semibold rounded-full text-sm">
+                        Question #{index + 1}
+                      </span>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">Question</label>
+                      <input
+                        type="text"
+                        value={faq.question}
+                        onChange={(e) => {
+                          const newQuestions = [...content.faq.questions];
+                          newQuestions[index].question = e.target.value;
+                          setContent({ ...content, faq: { ...content.faq, questions: newQuestions } });
+                        }}
+                        className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent font-semibold"
+                        placeholder="Votre question..."
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-2">Réponse</label>
+                      <textarea
+                        value={faq.answer}
+                        onChange={(e) => {
+                          const newQuestions = [...content.faq.questions];
+                          newQuestions[index].answer = e.target.value;
+                          setContent({ ...content, faq: { ...content.faq, questions: newQuestions } });
+                        }}
+                        rows={3}
+                        className="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        placeholder="Votre réponse..."
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="fixed bottom-8 right-8 z-50">
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="px-8 py-4 bg-amber-600 text-white rounded-full hover:bg-amber-700 transition-all shadow-2xl flex items-center gap-3 disabled:opacity-50 transform hover:scale-105"
           >
-            <Link
-              href="/admin/dashboard"
-              className="px-6 py-3 text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors"
-            >
-              Annuler
-            </Link>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="inline-flex items-center px-6 py-3 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Enregistrement...
-                </>
-              ) : (
-                <>
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Enregistrer les modifications
-                </>
-              )}
-            </button>
-          </motion.div>
-        </form>
+            <CheckCircleIcon className="h-6 w-6" />
+            {isSaving ? 'Enregistrement...' : 'Enregistrer tout'}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
+
+export default ContactEditorPage;

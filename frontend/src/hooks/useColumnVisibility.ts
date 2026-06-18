@@ -34,7 +34,7 @@ export function useColumnVisibility({
             return validColumns;
           }
         } catch (error) {
-          console.error('Error parsing saved column visibility:', error);
+          // Error parsing saved column visibility
         }
       }
     }

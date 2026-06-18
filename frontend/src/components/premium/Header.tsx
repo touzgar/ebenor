@@ -102,7 +102,7 @@ export function Header() {
             </motion.div>
 
             {/* Navigation Desktop avec animations premium */}
-            <nav className="hidden lg:flex items-center space-x-8 flex-1 justify-center" aria-label="Navigation principale" id="navigation">
+            <nav className="hidden md:flex items-center space-x-4 xl:space-x-8 flex-1 justify-center" aria-label="Navigation principale" id="navigation">
               {navigation.map((item, index) => {
                 const isActive = pathname === item.href;
                 
@@ -126,6 +126,7 @@ export function Header() {
                           : 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] hover:text-[#D4B55A] hover:drop-shadow-[0_0_6px_rgba(212,181,90,0.6)]'
                       }`}
                       aria-current={isActive ? 'page' : undefined}
+                      suppressHydrationWarning
                     >
                       {item.name}
                       
@@ -157,11 +158,11 @@ export function Header() {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.8, duration: 0.6 }}
-              className="hidden lg:flex items-center space-x-4 flex-shrink-0"
+              className="hidden xl:flex items-center space-x-4 flex-shrink-0"
             >
               <Link
                 href="/admin/login"
-                className="group relative px-6 py-2.5 text-white font-semibold text-sm rounded-full border-2 border-white/30 hover:border-[#C9A14A] hover:text-[#C9A14A] transition-all duration-300 transform hover:scale-105 focus-visible-enhanced backdrop-blur-sm bg-white/5 hover:bg-[#C9A14A]/10 shadow-lg hover:shadow-[#C9A14A]/30"
+                className="group relative px-4 xl:px-6 py-2 xl:py-2.5 text-white font-semibold text-xs xl:text-sm rounded-full border-2 border-white/30 hover:border-[#C9A14A] hover:text-[#C9A14A] transition-all duration-300 transform hover:scale-105 focus-visible-enhanced backdrop-blur-sm bg-white/5 hover:bg-[#C9A14A]/10 shadow-lg hover:shadow-[#C9A14A]/30"
                 aria-label="Connexion administrateur"
               >
                 <span className="relative z-10 tracking-wide flex items-center space-x-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
@@ -180,7 +181,7 @@ export function Header() {
               
               <Link
                 href="/contact"
-                className="group relative px-8 py-3 bg-gradient-to-r from-[#C9A14A] via-[#D4B55A] to-[#C9A14A] text-black font-bold text-sm rounded-full overflow-hidden shadow-xl shadow-[#C9A14A]/50 hover:shadow-2xl hover:shadow-[#C9A14A]/70 transition-all duration-500 transform hover:scale-105 focus-visible-enhanced ring-2 ring-amber-400/30 ring-offset-2 ring-offset-black/50"
+                className="group relative px-6 xl:px-8 py-2.5 xl:py-3 bg-gradient-to-r from-[#C9A14A] via-[#D4B55A] to-[#C9A14A] text-black font-bold text-xs xl:text-sm rounded-full overflow-hidden shadow-xl shadow-[#C9A14A]/50 hover:shadow-2xl hover:shadow-[#C9A14A]/70 transition-all duration-500 transform hover:scale-105 focus-visible-enhanced ring-2 ring-amber-400/30 ring-offset-2 ring-offset-black/50"
                 aria-label="Demander un devis - Aller à la page de contact"
               >
                 <span className="relative z-10 tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
@@ -206,7 +207,7 @@ export function Header() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden relative w-10 h-10 flex items-center justify-center text-white hover:text-[#C9A14A] transition-colors duration-300 focus-visible-enhanced rounded"
+              className="md:hidden ml-auto relative w-10 h-10 flex items-center justify-center text-white hover:text-[#C9A14A] transition-colors duration-300 focus-visible-enhanced rounded"
               aria-label={isMobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
               aria-expanded={isMobileMenuOpen}
               aria-controls="mobile-menu"
@@ -222,6 +223,31 @@ export function Header() {
                 )}
               </motion.div>
             </motion.button>
+
+            {/* Tablet CTA Button (hidden on mobile and desktop xl) */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.8, duration: 0.6 }}
+              className="hidden md:flex xl:hidden ml-4"
+            >
+              <Link
+                href="/contact"
+                className="group relative px-5 py-2.5 bg-gradient-to-r from-[#C9A14A] via-[#D4B55A] to-[#C9A14A] text-black font-bold text-xs rounded-full overflow-hidden shadow-xl shadow-[#C9A14A]/50 hover:shadow-2xl hover:shadow-[#C9A14A]/70 transition-all duration-500 transform hover:scale-105 focus-visible-enhanced"
+                aria-label="Demander un devis"
+              >
+                <span className="relative z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]">
+                  Devis
+                </span>
+                
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -skew-x-12"
+                  initial={{ x: '-100%' }}
+                  whileHover={{ x: '100%' }}
+                  transition={{ duration: 0.6 }}
+                />
+              </Link>
+            </motion.div>
           </div>
         </div>
       </motion.header>
@@ -234,7 +260,7 @@ export function Header() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-40 lg:hidden"
+            className="fixed inset-0 z-40 md:hidden"
           >
             {/* Backdrop avec blur */}
             <motion.div
@@ -276,7 +302,7 @@ export function Header() {
               </motion.div>
 
               {/* Navigation mobile */}
-              <nav className="flex flex-col items-center space-y-8 mb-12">
+              <nav className="flex flex-col items-center space-y-6 sm:space-y-8 mb-8 sm:mb-12">
                 {navigation.map((item, index) => {
                   const isActive = pathname === item.href;
                   
@@ -294,7 +320,7 @@ export function Header() {
                       <Link
                         href={item.href}
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className={`text-2xl font-light tracking-wider transition-all duration-300 focus-visible-enhanced rounded px-4 py-2 ${
+                        className={`text-xl sm:text-2xl font-light tracking-wider transition-all duration-300 focus-visible-enhanced rounded px-4 py-2 ${
                           isActive 
                             ? 'text-[#C9A14A]' 
                             : 'text-white hover:text-[#C9A14A]'
@@ -313,12 +339,12 @@ export function Header() {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.8, duration: 0.6 }}
-                className="flex flex-col items-center space-y-4"
+                className="flex flex-col items-center space-y-3 sm:space-y-4 w-full max-w-xs px-4"
               >
                 <Link
                   href="/admin/login"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="px-10 py-3 border-2 border-[#C9A14A] text-[#C9A14A] font-semibold rounded-full hover:bg-[#C9A14A] hover:text-black transition-all duration-300 focus-visible-enhanced"
+                  className="w-full px-8 sm:px-10 py-2.5 sm:py-3 border-2 border-[#C9A14A] text-[#C9A14A] font-semibold text-sm sm:text-base rounded-full hover:bg-[#C9A14A] hover:text-black transition-all duration-300 focus-visible-enhanced text-center"
                   aria-label="Connexion administrateur"
                 >
                   Connexion Admin
@@ -327,7 +353,7 @@ export function Header() {
                 <Link
                   href="/contact"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="px-10 py-4 bg-gradient-to-r from-[#C9A14A] to-[#D4B55A] text-black font-semibold rounded-full shadow-2xl hover:shadow-[#C9A14A]/50 transition-all duration-500 transform hover:scale-105 focus-visible-enhanced"
+                  className="w-full px-8 sm:px-10 py-3 sm:py-4 bg-gradient-to-r from-[#C9A14A] to-[#D4B55A] text-black font-semibold text-sm sm:text-base rounded-full shadow-2xl hover:shadow-[#C9A14A]/50 transition-all duration-500 transform hover:scale-105 focus-visible-enhanced text-center"
                   aria-label="Demander un devis - Aller à la page de contact"
                 >
                   Demander un devis

@@ -75,7 +75,6 @@ export function useGallery(options: UseGalleryOptions = {}) {
           throw new Error('Erreur lors du chargement de la galerie');
         }
       } catch (err) {
-        console.error('Erreur lors du chargement de la galerie:', err);
         setError(err instanceof Error ? err.message : 'Erreur inconnue');
         
         // Fallback vers des images par défaut en cas d'erreur

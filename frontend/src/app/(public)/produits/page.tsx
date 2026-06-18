@@ -2,20 +2,18 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Header } from '@/components/premium/Header';
 import { Footer } from '@/components/public/Footer';
-import ProductGrid from '@/components/public/ProductGrid';
-import ProductTable from '@/components/public/ProductTable';
+import ProductImageGrid from '@/components/public/ProductImageGrid';
 import Pagination from '@/components/ui/Pagination';
 import { SkeletonGrid } from '@/components/ui/LoadingSkeleton';
 import { getProducts, Product, ProductFilters, getCategoryLabel, getCategories } from '@/lib/api/products';
+import { getShowroomContent } from '@/lib/api/showroom';
 import { 
   Squares2X2Icon, 
-  MagnifyingGlassIcon,
-  FunnelIcon,
   SparklesIcon,
-  ShoppingBagIcon
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 /**
@@ -35,6 +33,16 @@ export default function ProduitsPage() {
   const [total, setTotal] = useState(0);
   const [mounted, setMounted] = useState(false);
   
+  // Showroom content state
+  const [showroomContent, setShowroomContent] = useState({
+    title: 'Notre',
+    titleHighlight: 'Collection',
+    subtitle: 'Découvrez nos créations en bois d\'exception et laissez-vous inspirer par notre savoir-faire artisanal.',
+    ctaTitle: 'Vous ne trouvez pas ce que vous cherchez ?',
+    ctaSubtitle: 'Nous créons également des pièces sur mesure selon vos spécifications exactes. Contactez-nous pour discuter de votre projet personnalisé.',
+    ctaButtonText: 'Demander un Devis Gratuit',
+  });
+  
   // Filters from URL
   const [filters, setFilters] = useState<ProductFilters>({
     category: searchParams.get('category') || undefined,
@@ -43,19 +51,44 @@ export default function ProduitsPage() {
 
   const [availableCategories, setAvailableCategories] = useState<Array<{ 
     category: string; 
-    name?: string; 
+    name: string; 
     count: number;
     icon?: string;
     color?: string;
   }>>([]);
   
+  // Category name lookup map
+  const [categoryNameMap, setCategoryNameMap] = useState<Record<string, string>>({});
+  
   const [sortBy, setSortBy] = useState(searchParams.get('sort') || '-createdAt');
   const [searchInput, setSearchInput] = useState(filters.search || '');
 
-  // Fix SSR hydration by only rendering on client
+  // Fetch showroom content
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    const loadShowroomContent = async () => {
+      try {
+        const response = await getShowroomContent();
+        if (response.success && response.data) {
+          setShowroomContent({
+            title: response.data.title,
+            titleHighlight: response.data.titleHighlight,
+            subtitle: response.data.subtitle,
+            ctaTitle: response.data.ctaTitle,
+            ctaSubtitle: response.data.ctaSubtitle,
+            ctaButtonText: response.data.ctaButtonText,
+          });
+        }
+      } catch (err) {
+        // Silent fail
+      }
+    };
+
+    if (mounted) {
+      loadShowroomContent();
+      const interval = setInterval(loadShowroomContent, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [mounted]);
 
   // Fetch products
   const fetchProducts = useCallback(async () => {
@@ -83,57 +116,40 @@ export default function ProduitsPage() {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        // Use the getCategories API which now returns counts
         const response = await getCategories();
         
         if (response.success && response.data) {
           const categoriesArray = response.data.map(cat => ({
-            category: cat.slug || cat.category || cat.name || '',
-            name: cat.name || getCategoryLabel(cat.slug || cat.category || ''),
+            category: cat.slug || cat.category || '',
+            name: cat.name || cat.slug || '',
             count: cat.count || 0,
             icon: cat.icon,
             color: cat.color,
           }));
           
-          // Sort by count descending if no displayOrder
-          const sortedCategories = categoriesArray.sort((a, b) => {
-            return b.count - a.count;
+          const nameMap: Record<string, string> = {};
+          categoriesArray.forEach(cat => {
+            nameMap[cat.category] = cat.name;
           });
+          setCategoryNameMap(nameMap);
           
+          const sortedCategories = categoriesArray.sort((a, b) => b.count - a.count);
           setAvailableCategories(sortedCategories);
         }
       } catch (err) {
-        console.error('Failed to load categories', err);
-        // Fallback: fetch all products and count manually
-        try {
-          const response = await getProducts(1, 1000, {}, '-createdAt');
-          
-          if (response.success && response.data) {
-            const categoryMap = new Map<string, number>();
-            
-            response.data.forEach(product => {
-              const cat = product.category;
-              if (cat) {
-                categoryMap.set(cat, (categoryMap.get(cat) || 0) + 1);
-              }
-            });
-            
-            const categoriesArray = Array.from(categoryMap.entries()).map(([category, count]) => ({
-              category,
-              name: getCategoryLabel(category),
-              count,
-            }));
-            
-            const sortedCategories = categoriesArray.sort((a, b) => b.count - a.count);
-            setAvailableCategories(sortedCategories);
-          }
-        } catch (fallbackErr) {
-          console.error('Fallback also failed', fallbackErr);
-        }
+        // Silent fail
       }
     };
-    loadCategories();
-  }, []); // Only load once on mount
+    
+    if (mounted) {
+      loadCategories();
+    }
+  }, [mounted]);
+
+  // Set mounted state
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Fetch products when dependencies change
   useEffect(() => {
@@ -157,7 +173,7 @@ export default function ProduitsPage() {
     const params = new URLSearchParams();
     if (filters.category) params.set('category', filters.category);
     if (filters.search) params.set('search', filters.search);
-    if (sortBy !== 'newest') params.set('sort', sortBy);
+    if (sortBy !== '-createdAt') params.set('sort', sortBy);
     if (currentPage > 1) params.set('page', currentPage.toString());
     
     const queryString = params.toString();
@@ -209,7 +225,7 @@ export default function ProduitsPage() {
   const clearFilters = () => {
     setFilters({});
     setSearchInput('');
-    setSortBy('newest');
+    setSortBy('-createdAt');
     setCurrentPage(1);
   };
 
@@ -230,7 +246,7 @@ export default function ProduitsPage() {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-amber-50/10 to-neutral-50">
+      <div className="min-h-screen bg-white">
         {/* Hero Section - Modern */}
         <section className="relative pt-32 pb-20 overflow-hidden">
           {/* Background Decorative Elements */}
@@ -256,202 +272,143 @@ export default function ProduitsPage() {
               </motion.div>
               
               <h1 className="text-5xl lg:text-7xl font-bold text-neutral-900 mb-6">
-                Notre <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-amber-500">Showroom</span>
+                {showroomContent.title} <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-amber-500">{showroomContent.titleHighlight}</span>
               </h1>
               <p className="text-xl lg:text-2xl text-neutral-600 leading-relaxed">
-                Explorez notre collection de créations en bois d'exception, 
-                chaque pièce étant le fruit d'un savoir-faire artisanal unique.
+                {showroomContent.subtitle}
               </p>
             </motion.div>
           </div>
         </section>
 
-        {/* Filters and Search - Enhanced */}
-        <section 
-          className="py-6 bg-white/80 backdrop-blur-xl border-y border-neutral-200/50 sticky top-20 z-40 shadow-sm" 
-          aria-label="Filtres et recherche de produits"
-        >
+        {/* Filters Section - Same as Galerie */}
+        <section className="py-8 bg-white border-b border-neutral-100">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col gap-6">
-              {/* Category Filters - Enhanced & Organized */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <FunnelIcon className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                  <span className="font-bold text-neutral-900 text-lg">Catégories</span>
-                  <div className="flex-1 h-px bg-gradient-to-r from-amber-200 to-transparent"></div>
-                </div>
-                
-                <div className="flex flex-wrap gap-3">
-                  {/* "Tous" button always first */}
-                  <button
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-neutral-900">Filtrer par catégorie</h2>
+                <p className="text-sm text-neutral-500 mt-1">Trouvez exactement ce que vous cherchez</p>
+              </div>
+              
+              {hasActiveFilters && (
+                <motion.button
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  onClick={clearFilters}
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-neutral-600 bg-neutral-100 rounded-full hover:bg-neutral-200 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Réinitialiser
+                </motion.button>
+              )}
+            </div>
+
+            {/* Category Chips - Modern Design */}
+            <div className="flex flex-wrap gap-3" suppressHydrationWarning>
+              <AnimatePresence mode="popLayout">
+                {availableCategories.length > 0 ? (
+                <>
+                  {/* All Button */}
+                  <motion.button
+                    layout
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.2 }}
                     onClick={() => handleCategoryChange('all')}
-                    className={`group relative px-6 py-3 rounded-2xl font-semibold transition-all transform hover:scale-105 ${
+                    className={`relative px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
                       !filters.category
-                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30'
-                        : 'bg-white text-neutral-700 hover:bg-neutral-50 border-2 border-neutral-200 hover:border-amber-300'
+                        ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
+                        : 'bg-neutral-50 text-neutral-700 hover:bg-neutral-100'
                     }`}
-                    aria-pressed={!filters.category}
-                    aria-label="Afficher tous les produits"
+                    suppressHydrationWarning
                   >
-                    <span className="flex items-center gap-2">
-                      <ShoppingBagIcon className="w-5 h-5" />
-                      Tous les produits
-                      <span className={`ml-1 px-2 py-0.5 rounded-full text-xs font-bold ${
+                    <span className="relative z-10 flex items-center gap-2">
+                      Toutes
+                      <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold ${
                         !filters.category 
-                          ? 'bg-white/20' 
-                          : 'bg-neutral-100'
+                          ? 'bg-white/20 text-white' 
+                          : 'bg-neutral-200 text-neutral-700'
                       }`}>
-                        {availableCategories.reduce((sum, cat) => sum + cat.count, 0)}
+                        {availableCategories.reduce((sum, cat) => sum + (cat.count || 0), 0)}
                       </span>
                     </span>
-                  </button>
+                  </motion.button>
 
-                  {/* Category buttons sorted by popularity */}
-                  {availableCategories.map((cat) => {
+                  {/* Category Buttons */}
+                  {availableCategories.map((cat, index) => {
                     const isActive = filters.category === cat.category;
-                    const buttonStyle = cat.color && isActive ? {
-                      background: `linear-gradient(to right, ${cat.color}, ${cat.color}dd)`,
-                    } : {};
-                    
                     return (
-                      <button
+                      <motion.button
                         key={cat.category}
+                        layout
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ duration: 0.2 }}
                         onClick={() => handleCategoryChange(cat.category)}
-                        style={isActive ? buttonStyle : {}}
-                        className={`group relative px-6 py-3 rounded-2xl font-semibold transition-all transform hover:scale-105 ${
+                        className={`relative px-6 py-3 rounded-full font-semibold transition-all duration-300 ${
                           isActive
-                            ? cat.color 
-                              ? 'text-white shadow-lg'
-                              : 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg shadow-amber-500/30'
-                            : 'bg-white text-neutral-700 hover:bg-neutral-50 border-2 border-neutral-200 hover:border-amber-300'
+                            ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
+                            : 'bg-neutral-50 text-neutral-700 hover:bg-neutral-100'
                         }`}
-                        aria-pressed={isActive}
-                        aria-label={`Filtrer par ${cat.name || getCategoryLabel(cat.category)}`}
                       >
-                        <span className="flex items-center gap-2">
-                          {cat.icon && (
-                            <span className="text-lg">{cat.icon}</span>
-                          )}
-                          {cat.name || getCategoryLabel(cat.category)}
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                        <span className="relative z-10 flex items-center gap-2.5">
+                          {/* Color indicator */}
+                          <span 
+                            className="w-2 h-2 rounded-full"
+                            style={{ 
+                              backgroundColor: isActive ? 'white' : cat.color,
+                              opacity: isActive ? 1 : 0.7
+                            }}
+                          />
+                          {cat.name}
+                          <span className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-xs font-bold ${
                             isActive 
-                              ? 'bg-white/20' 
-                              : 'bg-amber-100 text-amber-700'
+                              ? 'bg-white/20 text-white' 
+                              : 'bg-neutral-200 text-neutral-700'
                           }`}>
                             {cat.count}
                           </span>
                         </span>
-                      </button>
+                      </motion.button>
                     );
                   })}
-                </div>
-              </div>
-
-              {/* Search - Enhanced */}
-              <div className="flex gap-4 flex-col sm:flex-row">
-                <form onSubmit={handleSearch} className="flex gap-2 flex-1" role="search">
-                  <label htmlFor="product-search" className="sr-only">Rechercher des produits</label>
-                  <div className="relative flex-1">
-                    <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                    <input
-                      id="product-search"
-                      type="search"
-                      placeholder="Rechercher un produit... (min 2 caractères)"
-                      value={searchInput}
-                      onChange={(e) => setSearchInput(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 rounded-2xl border-2 border-neutral-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/10 transition-all outline-none bg-white"
-                      aria-label="Rechercher des produits"
-                    />
-                    {searchInput && searchInput.trim().length === 1 && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-red-600 bg-red-50 px-2 py-1 rounded-full font-medium">
-                        Min 2 car.
-                      </div>
-                    )}
+                </>
+              ) : (
+                  <div className="flex items-center gap-2 text-neutral-500 py-2">
+                    <div className="w-5 h-5 border-2 border-neutral-300 border-t-amber-600 rounded-full animate-spin" />
+                    <span className="text-sm">Chargement des catégories...</span>
                   </div>
-                  <button 
-                    type="submit" 
-                    className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-2xl hover:from-amber-600 hover:to-amber-700 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                    aria-label="Lancer la recherche"
-                    disabled={searchInput.trim().length === 1}
-                  >
-                    Rechercher
-                  </button>
-                </form>
-              </div>
-
-              {/* Active Filters */}
-              {hasActiveFilters && (
-                <div className="flex items-center gap-2 flex-wrap" role="status" aria-live="polite">
-                  <span className="text-sm font-medium text-neutral-600">Filtres actifs:</span>
-                  {filters.category && (
-                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-full text-sm font-medium">
-                      {getCategoryLabel(filters.category)}
-                      <button
-                        onClick={() => handleCategoryChange('all')}
-                        className="hover:text-amber-900 transition-colors"
-                        aria-label={`Retirer le filtre ${getCategoryLabel(filters.category)}`}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </span>
-                  )}
-                  {filters.search && (
-                    <span className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-800 rounded-full text-sm font-medium">
-                      "{filters.search}"
-                      <button
-                        onClick={() => {
-                          setSearchInput('');
-                          setFilters(prev => ({ ...prev, search: undefined }));
-                        }}
-                        className="hover:text-amber-900 transition-colors"
-                        aria-label="Retirer le filtre de recherche"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </span>
-                  )}
-                  <button
-                    onClick={clearFilters}
-                    className="text-sm text-amber-600 hover:text-amber-700 font-semibold underline"
-                    aria-label="Effacer tous les filtres"
-                  >
-                    Effacer tout
-                  </button>
-                </div>
-              )}
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </section>
 
-        {/* Products Grid */}
-        <section className="py-20 relative z-10" aria-label="Liste des produits">
+        {/* Products Section */}
+        <section className="py-16 bg-gradient-to-b from-white to-neutral-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Error Message - Enhanced */}
+          {/* Error Message */}
           {error && (
             <motion.div 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-8 p-6 bg-red-50 border-2 border-red-200 rounded-2xl shadow-lg"
+              className="mb-8 p-6 bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-500 rounded-xl"
             >
               <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-500 flex items-center justify-center">
+                  <XMarkIcon className="w-6 h-6 text-white" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-red-800 mb-2">Erreur de chargement</h3>
+                  <h3 className="text-lg font-bold text-red-900 mb-1">Erreur de chargement</h3>
                   <p className="text-sm text-red-700 mb-3">{error}</p>
-                  <p className="text-sm text-red-600 bg-red-100 p-3 rounded-lg mb-4">
-                    <strong>Solution:</strong> Vérifiez que le backend est démarré sur <code className="bg-red-200 px-2 py-1 rounded font-mono">http://localhost:5000</code>
-                  </p>
                   <button
                     onClick={() => fetchProducts()}
-                    className="px-6 py-2.5 bg-red-600 text-white font-semibold rounded-xl hover:bg-red-700 transition-all shadow-lg hover:shadow-xl"
+                    className="px-5 py-2.5 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-all shadow-lg hover:shadow-xl"
                   >
                     🔄 Réessayer
                   </button>
@@ -459,83 +416,131 @@ export default function ProduitsPage() {
               </div>
             </motion.div>
           )}
-          
-          {/* Results Count - Enhanced */}
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <p className="text-lg font-medium" role="status" aria-live="polite" aria-atomic="true">
-                {loading ? (
-                  <span className="inline-block w-48 h-7 bg-neutral-200 animate-pulse rounded-lg" />
-                ) : (
-                  <span className="text-neutral-600">
-                    <span className="text-3xl font-bold text-neutral-900">{total}</span> 
-                    <span className="ml-2">produit{total !== 1 ? 's' : ''} trouvé{total !== 1 ? 's' : ''}</span>
-                  </span>
-                )}
-              </p>
-              {hasActiveFilters && !loading && (
-                <p className="text-sm text-neutral-500 mt-1">
-                  Filtres actifs appliqués
-                </p>
-              )}
-            </div>
             
-            {/* Real-time update indicator */}
-            {!loading && total > 0 && (
-              <div className="flex items-center gap-2 text-sm text-neutral-500">
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                <span>Mis à jour en temps réel</span>
+            {/* Results Header with Pagination Info */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-10"
+            >
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  {loading ? (
+                    <div className="h-10 w-64 bg-neutral-200 animate-pulse rounded-lg" />
+                  ) : (
+                    <div>
+                      <div className="flex items-baseline gap-3">
+                        <h3 className="text-4xl font-bold text-neutral-900">{total}</h3>
+                        <p className="text-lg text-neutral-600">
+                          produit{total !== 1 ? 's' : ''} {hasActiveFilters ? 'trouvé' + (total !== 1 ? 's' : '') : 'au total'}
+                        </p>
+                      </div>
+                      {hasActiveFilters && !loading && (
+                        <p className="text-sm text-amber-600 font-medium mt-1">
+                          ✓ Filtre actif: {availableCategories.find(c => c.category === filters.category)?.name}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Pagination Info Badge */}
+                {!loading && total > 0 && (
+                  <div className="flex items-center gap-3">
+                    <div className="px-4 py-2 bg-amber-50 border border-amber-200 rounded-full">
+                      <span className="text-sm font-medium text-amber-900">
+                        Page {currentPage} sur {totalPages}
+                      </span>
+                    </div>
+                    <div className="px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-full">
+                      <span className="text-sm font-medium text-neutral-700">
+                        {((currentPage - 1) * 12) + 1} - {Math.min(currentPage * 12, total)} produits
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
+            {/* Product Grid */}
+            {loading ? (
+              <SkeletonGrid count={12} type="product" columns={3} />
+            ) : products.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-20"
+              >
+                <div className="w-24 h-24 bg-gradient-to-br from-amber-100 to-amber-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Squares2X2Icon className="w-12 h-12 text-amber-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-neutral-900 mb-3">
+                  Aucun produit trouvé
+                </h3>
+                <p className="text-neutral-600 mb-6 max-w-md mx-auto">
+                  Aucun produit ne correspond aux filtres sélectionnés. Essayez de modifier vos critères de recherche.
+                </p>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-xl hover:shadow-lg transition-all"
+                  >
+                    Afficher tous les produits
+                  </button>
+                )}
+              </motion.div>
+            ) : (
+              <ProductImageGrid products={products} />
+            )}
+
+            {/* Pagination */}
+            {!loading && totalPages > 1 && (
+              <div className="mt-16">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
               </div>
             )}
           </div>
-
-          {/* Product Grid */}
-          {loading ? (
-            <SkeletonGrid count={12} type="product" columns={3} />
-          ) : (
-            <ProductTable products={products} />
-          )}
-
-          {/* Pagination */}
-          {!loading && totalPages > 1 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
-          )}
-          </div>
         </section>
 
-        {/* Call to Action - Enhanced */}
-        <section className="py-20 bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-white relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-tr from-amber-400/0 via-amber-300/10 to-amber-400/0" />
-          <div className="absolute top-10 right-10 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 left-10 w-80 h-80 bg-white/5 rounded-full blur-3xl" />
-          
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+        {/* Call to Action */}
+        <section className="relative py-24 bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 overflow-hidden">
+          {/* Decorative Elements */}
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-10 right-10 w-72 h-72 bg-amber-500 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-10 left-10 w-96 h-96 bg-amber-600 rounded-full blur-3xl"></div>
+          </div>
+
+          <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full backdrop-blur-sm mb-6">
-                <SparklesIcon className="w-10 h-10 text-white" />
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl mb-8 shadow-xl">
+                <SparklesIcon className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-4xl lg:text-5xl font-bold mb-6">
-                Vous ne trouvez pas ce que vous cherchez ?
+              
+              <h2 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+                {showroomContent.ctaTitle}
               </h2>
-              <p className="text-xl text-amber-50 mb-10 max-w-2xl mx-auto leading-relaxed">
-                Nous créons également des pièces sur mesure selon vos spécifications exactes. 
-                Contactez-nous pour discuter de votre projet personnalisé.
+              
+              <p className="text-xl text-neutral-300 mb-10 max-w-2xl mx-auto leading-relaxed">
+                {showroomContent.ctaSubtitle}
               </p>
+              
               <a 
                 href="/contact" 
-                className="inline-block px-10 py-4 bg-white text-amber-600 font-bold text-lg rounded-full hover:bg-amber-50 transition-all transform hover:scale-105 shadow-2xl hover:shadow-3xl"
-                aria-label="Aller à la page de contact pour demander un devis sur mesure"
+                className="inline-flex items-center gap-3 px-8 py-4 bg-white text-neutral-900 font-bold text-lg rounded-xl hover:bg-neutral-100 transition-all transform hover:scale-105 shadow-2xl"
               >
-                Demander un Devis Sur Mesure
+                <span>{showroomContent.ctaButtonText}</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
               </a>
             </motion.div>
           </div>

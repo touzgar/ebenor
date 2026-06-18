@@ -72,7 +72,6 @@ export default function GalleryBulkActions({
         onComplete();
       }
     } catch (error) {
-      console.error('Bulk operation error:', error);
       showNotification(
         'error',
         error instanceof Error ? error.message : 'Une erreur est survenue'

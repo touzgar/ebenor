@@ -9,10 +9,23 @@ class ApiClient {
   constructor(baseURL: string = APP_CONFIG.apiUrl) {
     this.baseURL = baseURL;
     
-    // Récupérer le token depuis localStorage si disponible
+    // Récupérer le token depuis localStorage ou cookies si disponible
     if (typeof window !== 'undefined') {
       this.token = localStorage.getItem('auth_token');
       this.csrfToken = sessionStorage.getItem('csrf_token');
+      
+      // If no token in localStorage, try to get from cookie
+      if (!this.token) {
+        const cookies = document.cookie.split(';');
+        const authCookie = cookies.find(c => c.trim().startsWith('auth_token='));
+        if (authCookie) {
+          this.token = authCookie.split('=')[1];
+          // Sync to localStorage
+          if (this.token) {
+            localStorage.setItem('auth_token', this.token);
+          }
+        }
+      }
     }
   }
 
@@ -21,8 +34,12 @@ class ApiClient {
     if (typeof window !== 'undefined') {
       if (token) {
         localStorage.setItem('auth_token', token);
+        // Also set cookie for middleware to read
+        document.cookie = `auth_token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Strict; Secure`;
       } else {
         localStorage.removeItem('auth_token');
+        // Remove cookie
+        document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict';
       }
     }
   }
@@ -342,7 +359,14 @@ export const authService = {
   login: (email: string, password: string) => 
     apiClient.post('/auth/login', { email, password }),
   logout: () => {
+    // Clear token from both localStorage and cookies
     apiClient.setAuthToken(null);
+    
+    // Also clear CSRF token
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('csrf_token');
+    }
+    
     return Promise.resolve();
   },
   getProfile: () => apiClient.get('/auth/profile'),

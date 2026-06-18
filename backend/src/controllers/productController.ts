@@ -246,9 +246,9 @@ export class ProductController {
         })
       );
 
-      // Filtrer les catégories avec au moins 1 produit et trier
-      const activeCategories = categoriesWithCount
-        .filter(cat => cat.count > 0)
+      // Retourner TOUTES les catégories actives (même celles avec 0 produits)
+      // Trier par displayOrder puis par nom
+      const allCategories = categoriesWithCount
         .sort((a, b) => {
           // Trier par displayOrder puis par count
           if (a.displayOrder !== b.displayOrder) {
@@ -259,7 +259,7 @@ export class ProductController {
 
       const response: ApiResponse = {
         success: true,
-        data: activeCategories,
+        data: allCategories,
       };
 
       res.status(200).json(response);

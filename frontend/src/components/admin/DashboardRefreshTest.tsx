@@ -12,7 +12,6 @@ export function DashboardRefreshTest() {
     if (refreshKey > 0) {
       setLastUpdate(new Date().toLocaleTimeString());
       setEventCount(prev => prev + 1);
-      console.log('🎯 DashboardRefreshTest: refreshKey changed to', refreshKey);
     }
   }, [refreshKey]);
 
@@ -42,7 +41,6 @@ export function DashboardRefreshTest() {
 
         <button
           onClick={() => {
-            console.log('🧪 Manual refresh test button clicked');
             triggerRefresh();
           }}
           className="w-full px-3 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 transition-colors text-xs font-bold"

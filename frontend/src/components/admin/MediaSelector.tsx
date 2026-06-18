@@ -128,7 +128,6 @@ export function MediaSelector({
         }
       }
     } catch (err: any) {
-      console.error('Error fetching media:', err);
       setError(err.message || 'Erreur lors du chargement des médias');
     } finally {
       setLoading(false);

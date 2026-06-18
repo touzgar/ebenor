@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Header } from '@/components/premium/Header';
 import { 
@@ -13,11 +13,114 @@ import {
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
 
+interface ContactPageContent {
+  hero: {
+    title: string;
+    subtitle: string;
+    description: string;
+  };
+  contactInfo: {
+    address: {
+      line1: string;
+      line2: string;
+    };
+    phone: string;
+    email: string;
+    hours: {
+      weekdays: string;
+      weekdaysTime: string;
+      saturday: string;
+      saturdayTime: string;
+      sunday: string;
+      sundayStatus: string;
+    };
+  };
+  whatsapp: {
+    title: string;
+    description: string;
+    buttonText: string;
+    phoneNumber: string;
+  };
+  map: {
+    title: string;
+    subtitle: string;
+    embedUrl: string;
+  };
+  faq: {
+    title: string;
+    subtitle: string;
+    questions: Array<{
+      question: string;
+      answer: string;
+    }>;
+  };
+}
+
+const defaultContent: ContactPageContent = {
+  hero: {
+    title: 'Contactez-Nous',
+    subtitle: 'Contact',
+    description: 'Prêt à donner vie à votre projet ? Notre équipe d\'artisans passionnés est à votre écoute pour transformer vos idées en réalité.',
+  },
+  contactInfo: {
+    address: {
+      line1: 'Zone Industrielle',
+      line2: 'Tunis, Tunisie',
+    },
+    phone: '+216 XX XXX XXX',
+    email: 'contact@ebenor-creation.tn',
+    hours: {
+      weekdays: 'Lun - Ven',
+      weekdaysTime: '8h00 - 17h00',
+      saturday: 'Samedi',
+      saturdayTime: '8h00 - 12h00',
+      sunday: 'Dimanche',
+      sundayStatus: 'Fermé',
+    },
+  },
+  whatsapp: {
+    title: 'Contact Rapide',
+    description: 'Besoin d\'une réponse immédiate ? Contactez-nous via WhatsApp pour un échange instantané !',
+    buttonText: 'Ouvrir WhatsApp',
+    phoneNumber: '+216XXXXXXXX',
+  },
+  map: {
+    title: 'Notre Localisation',
+    subtitle: 'Zone Industrielle, Tunis - Tunisie',
+    embedUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d102948.82073654844!2d10.08080475!3d36.8064948!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x12fd34cf7c5f06b1%3A0x6b94f7608db567e!2sZone%20Industrielle%2C%20Tunis%2C%20Tunisia!5e0!3m2!1sen!2s!4v1234567890123!5m2!1sen!2s',
+  },
+  faq: {
+    title: 'Questions Fréquentes',
+    subtitle: 'Trouvez rapidement les réponses aux questions les plus courantes',
+    questions: [
+      {
+        question: 'Quel est le délai de fabrication ?',
+        answer: 'Les délais varient selon la complexité du projet, généralement entre 2 à 8 semaines pour les créations sur mesure.',
+      },
+      {
+        question: 'Proposez-vous la livraison ?',
+        answer: 'Oui, nous assurons la livraison et l\'installation dans toute la Tunisie. Les frais dépendent de la distance et du volume.',
+      },
+      {
+        question: 'Quelles essences de bois utilisez-vous ?',
+        answer: 'Nous travaillons avec diverses essences : chêne, hêtre, noyer, acajou, selon vos préférences et le budget.',
+      },
+      {
+        question: 'Comment obtenir un devis ?',
+        answer: 'Contactez-nous avec les détails de votre projet. Nous vous fournirons un devis détaillé gratuit sous 48h.',
+      },
+    ],
+  },
+};
+
 /**
  * Contact Page with Functional Form
  * Sends message to database AND sends email notification
  */
 export default function ContactPage() {
+  const [pageContent, setPageContent] = useState<ContactPageContent>(defaultContent);
+  const [mounted, setMounted] = useState(false);
+  
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -33,6 +136,52 @@ export default function ContactPage() {
     type: 'success' | 'error' | null;
     message: string;
   }>({ type: null, message: '' });
+
+  // Load content from localStorage
+  useEffect(() => {
+    setMounted(true);
+    const saved = localStorage.getItem('contact_page_content');
+    if (saved) {
+      try {
+        setPageContent(JSON.parse(saved));
+      } catch (error) {
+        console.error('Error loading contact page content:', error);
+      }
+    }
+  }, []);
+
+  // Listen for storage changes (when admin saves in another tab/window)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'contact_page_content' && e.newValue) {
+        try {
+          setPageContent(JSON.parse(e.newValue));
+        } catch (error) {
+          console.error('Error updating contact page content:', error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Also listen for custom event (same tab updates)
+  useEffect(() => {
+    const handleCustomUpdate = () => {
+      const saved = localStorage.getItem('contact_page_content');
+      if (saved) {
+        try {
+          setPageContent(JSON.parse(saved));
+        } catch (error) {
+          console.error('Error updating contact page content:', error);
+        }
+      }
+    };
+
+    window.addEventListener('contact_page_updated', handleCustomUpdate);
+    return () => window.removeEventListener('contact_page_updated', handleCustomUpdate);
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -120,12 +269,167 @@ export default function ContactPage() {
     <>
       <Header />
       <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-amber-50/20 to-neutral-50">
-        {/* Hero Section - Modern & Elegant */}
+        {/* Hero Section - Innovative Animated Background */}
         <section className="relative pt-32 pb-20 overflow-hidden">
-          {/* Background Decorative Elements */}
+          {/* Innovative Animated Background */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-20 right-10 w-72 h-72 bg-amber-300/10 rounded-full blur-3xl" />
-            <div className="absolute bottom-20 left-10 w-96 h-96 bg-amber-400/10 rounded-full blur-3xl" />
+            {/* Animated Gradient Mesh */}
+            <motion.div 
+              animate={{ 
+                background: [
+                  'radial-gradient(circle at 20% 50%, rgba(251, 191, 36, 0.15) 0%, transparent 50%)',
+                  'radial-gradient(circle at 80% 50%, rgba(251, 191, 36, 0.15) 0%, transparent 50%)',
+                  'radial-gradient(circle at 50% 80%, rgba(251, 191, 36, 0.15) 0%, transparent 50%)',
+                  'radial-gradient(circle at 20% 50%, rgba(251, 191, 36, 0.15) 0%, transparent 50%)',
+                ]
+              }}
+              transition={{ 
+                duration: 20,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="absolute inset-0"
+            />
+
+            {/* Floating Orbs with Complex Paths */}
+            <motion.div 
+              animate={{ 
+                x: ['0%', '100%', '0%'],
+                y: ['0%', '50%', '0%'],
+                scale: [1, 1.3, 1],
+                opacity: [0.2, 0.4, 0.2],
+              }}
+              transition={{ 
+                duration: 25,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="absolute top-10 -left-20 w-96 h-96 bg-gradient-to-br from-amber-300/20 via-orange-400/15 to-transparent rounded-full blur-3xl"
+            />
+            
+            <motion.div 
+              animate={{ 
+                x: ['100%', '0%', '100%'],
+                y: ['100%', '30%', '100%'],
+                scale: [1, 1.5, 1],
+                opacity: [0.15, 0.35, 0.15],
+              }}
+              transition={{ 
+                duration: 30,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 3
+              }}
+              className="absolute bottom-0 -right-32 w-[500px] h-[500px] bg-gradient-to-tl from-amber-400/20 via-yellow-300/15 to-transparent rounded-full blur-3xl"
+            />
+
+            <motion.div 
+              animate={{ 
+                x: ['50%', '60%', '40%', '50%'],
+                y: ['50%', '30%', '70%', '50%'],
+                scale: [1, 1.2, 0.9, 1],
+                opacity: [0.25, 0.45, 0.25, 0.25],
+                rotate: [0, 90, 180, 270, 360],
+              }}
+              transition={{ 
+                duration: 35,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 5
+              }}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] bg-gradient-to-br from-amber-200/15 via-orange-300/20 to-amber-500/10 rounded-full blur-3xl"
+            />
+
+            {/* Geometric Floating Shapes */}
+            {[...Array(8)].map((_, i) => (
+              <motion.div
+                key={`shape-${i}`}
+                initial={{ 
+                  x: `${Math.random() * 100}%`,
+                  y: `${Math.random() * 100}%`,
+                  opacity: 0,
+                  scale: 0.5,
+                  rotate: 0
+                }}
+                animate={{ 
+                  x: `${(Math.random() * 100)}%`,
+                  y: `${(Math.random() * 100)}%`,
+                  opacity: [0, 0.4, 0.2, 0],
+                  scale: [0.5, 1.5, 1, 0.5],
+                  rotate: 360
+                }}
+                transition={{ 
+                  duration: Math.random() * 15 + 20,
+                  repeat: Infinity,
+                  delay: Math.random() * 10,
+                  ease: "easeInOut"
+                }}
+                className={`absolute w-${[16, 20, 24][i % 3]} h-${[16, 20, 24][i % 3]} 
+                  ${i % 3 === 0 ? 'rounded-full' : i % 3 === 1 ? 'rounded-lg' : 'rounded-sm rotate-45'}
+                  bg-gradient-to-br from-amber-400/10 to-orange-500/5 backdrop-blur-sm border border-amber-400/20`}
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                }}
+              />
+            ))}
+
+            {/* Wave Pattern Overlay */}
+            <motion.div
+              animate={{
+                backgroundPosition: ['0% 0%', '100% 100%', '0% 0%'],
+              }}
+              transition={{
+                duration: 25,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+              className="absolute inset-0 opacity-30"
+              style={{
+                backgroundImage: `
+                  repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 100px,
+                    rgba(251, 191, 36, 0.02) 100px,
+                    rgba(251, 191, 36, 0.02) 102px
+                  ),
+                  repeating-linear-gradient(
+                    -45deg,
+                    transparent,
+                    transparent 100px,
+                    rgba(251, 191, 36, 0.02) 100px,
+                    rgba(251, 191, 36, 0.02) 102px
+                  )
+                `,
+                backgroundSize: '200% 200%',
+              }}
+            />
+
+            {/* Sparkle Particles */}
+            {[...Array(15)].map((_, i) => (
+              <motion.div
+                key={`sparkle-${i}`}
+                initial={{ 
+                  x: `${Math.random() * 100}%`,
+                  y: '120%',
+                  opacity: 0,
+                  scale: 0
+                }}
+                animate={{ 
+                  y: '-20%',
+                  opacity: [0, 1, 1, 0],
+                  scale: [0, 1, 1, 0],
+                }}
+                transition={{ 
+                  duration: Math.random() * 8 + 12,
+                  repeat: Infinity,
+                  delay: Math.random() * 8,
+                  ease: "easeInOut"
+                }}
+                className="absolute w-1 h-1 bg-amber-400/60 rounded-full shadow-lg shadow-amber-400/50"
+              />
+            ))}
           </div>
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -135,22 +439,94 @@ export default function ContactPage() {
               transition={{ duration: 0.8 }}
               className="text-center max-w-4xl mx-auto"
             >
+              {/* Animated Icon with Pulse Effect */}
               <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 shadow-2xl shadow-amber-500/30 mb-8"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ 
+                  delay: 0.2, 
+                  type: "spring", 
+                  stiffness: 200,
+                  damping: 15
+                }}
+                className="inline-block mb-8 relative"
               >
-                <ChatBubbleLeftRightIcon className="w-10 h-10 text-white" />
+                {/* Pulsing rings */}
+                <motion.div
+                  animate={{ 
+                    scale: [1, 1.4, 1],
+                    opacity: [0.5, 0, 0.5],
+                  }}
+                  transition={{ 
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeOut"
+                  }}
+                  className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 opacity-30"
+                />
+                <motion.div
+                  animate={{ 
+                    scale: [1, 1.6, 1],
+                    opacity: [0.3, 0, 0.3],
+                  }}
+                  transition={{ 
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: "easeOut",
+                    delay: 0.5
+                  }}
+                  className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 opacity-20"
+                />
+                
+                {/* Main Icon */}
+                <motion.div
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  className="relative w-20 h-20 rounded-full bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 shadow-2xl shadow-amber-500/40 flex items-center justify-center cursor-pointer"
+                >
+                  <motion.div
+                    animate={{ rotate: [0, 5, -5, 0] }}
+                    transition={{ 
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  >
+                    <ChatBubbleLeftRightIcon className="w-10 h-10 text-white drop-shadow-lg" />
+                  </motion.div>
+                </motion.div>
               </motion.div>
               
-              <h1 className="text-5xl lg:text-7xl font-bold text-neutral-900 mb-6">
-                Contactez-<span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-amber-500">Nous</span>
-              </h1>
-              <p className="text-xl lg:text-2xl text-neutral-600 leading-relaxed">
-                Prêt à donner vie à votre projet ? Notre équipe d'artisans passionnés 
-                est à votre écoute pour transformer vos idées en réalité.
-              </p>
+              {/* Animated Title with Gradient */}
+              <motion.h1 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.8 }}
+                className="text-5xl lg:text-7xl font-bold mb-6 relative"
+              >
+                <motion.span
+                  className="inline-block bg-gradient-to-r from-neutral-900 via-amber-900 to-neutral-900 bg-clip-text text-transparent bg-[length:200%_auto]"
+                  animate={{ 
+                    backgroundPosition: ['0% center', '200% center', '0% center']
+                  }}
+                  transition={{ 
+                    duration: 8,
+                    repeat: Infinity,
+                    ease: "linear"
+                  }}
+                >
+                  {pageContent.hero.title}
+                </motion.span>
+              </motion.h1>
+              
+              {/* Animated Description */}
+              <motion.p 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, duration: 0.8 }}
+                className="text-xl lg:text-2xl text-neutral-600 leading-relaxed relative"
+              >
+                {pageContent.hero.description}
+              </motion.p>
             </motion.div>
           </div>
         </section>
@@ -381,8 +757,8 @@ export default function ContactPage() {
                         <div className="flex-1">
                           <p className="font-bold text-amber-400 mb-2 text-lg">Adresse</p>
                           <address className="text-neutral-200 not-italic leading-relaxed text-base">
-                            Zone Industrielle<br />
-                            Tunis, Tunisie
+                            {pageContent.contactInfo.address.line1}<br />
+                            {pageContent.contactInfo.address.line2}
                           </address>
                         </div>
                       </div>
@@ -395,11 +771,11 @@ export default function ContactPage() {
                         <div className="flex-1">
                           <p className="font-bold text-amber-400 mb-2 text-lg">Téléphone</p>
                           <a 
-                            href="tel:+216XXXXXXXX" 
+                            href={`tel:${pageContent.contactInfo.phone.replace(/\s/g, '')}`} 
                             className="text-neutral-200 hover:text-amber-300 transition-colors text-base font-medium"
                             aria-label="Appeler ÉBENOR CRÉATION"
                           >
-                            +216 XX XXX XXX
+                            {pageContent.contactInfo.phone}
                           </a>
                         </div>
                       </div>
@@ -412,11 +788,11 @@ export default function ContactPage() {
                         <div className="flex-1">
                           <p className="font-bold text-amber-400 mb-2 text-lg">Email</p>
                           <a 
-                            href="mailto:contact@ebenor-creation.tn" 
+                            href={`mailto:${pageContent.contactInfo.email}`} 
                             className="text-neutral-200 hover:text-amber-300 transition-colors break-all text-base font-medium"
                             aria-label="Envoyer un email à ÉBENOR CRÉATION"
                           >
-                            contact@ebenor-creation.tn
+                            {pageContent.contactInfo.email}
                           </a>
                         </div>
                       </div>
@@ -430,16 +806,16 @@ export default function ContactPage() {
                           <p className="font-bold text-amber-400 mb-2 text-lg">Horaires</p>
                           <div className="text-neutral-200 leading-relaxed text-base space-y-1">
                             <p className="flex justify-between">
-                              <span className="font-medium">Lun - Ven</span>
-                              <span>8h00 - 17h00</span>
+                              <span className="font-medium">{pageContent.contactInfo.hours.weekdays}</span>
+                              <span>{pageContent.contactInfo.hours.weekdaysTime}</span>
                             </p>
                             <p className="flex justify-between">
-                              <span className="font-medium">Samedi</span>
-                              <span>8h00 - 12h00</span>
+                              <span className="font-medium">{pageContent.contactInfo.hours.saturday}</span>
+                              <span>{pageContent.contactInfo.hours.saturdayTime}</span>
                             </p>
                             <p className="flex justify-between">
-                              <span className="font-medium">Dimanche</span>
-                              <span className="text-red-400">Fermé</span>
+                              <span className="font-medium">{pageContent.contactInfo.hours.sunday}</span>
+                              <span className="text-red-400">{pageContent.contactInfo.hours.sundayStatus}</span>
                             </p>
                           </div>
                         </div>
@@ -458,22 +834,22 @@ export default function ContactPage() {
                       <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-sm">
                         <span className="text-3xl">💬</span>
                       </div>
-                      <h3 className="text-2xl font-bold">Contact Rapide</h3>
+                      <h3 className="text-2xl font-bold">{pageContent.whatsapp.title}</h3>
                     </div>
                     
                     <p className="text-green-50 mb-6 text-base leading-relaxed">
-                      Besoin d'une réponse immédiate ? Contactez-nous via WhatsApp pour un échange instantané !
+                      {pageContent.whatsapp.description}
                     </p>
                     
                     <a
-                      href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER}?text=Bonjour, je souhaiterais obtenir des informations sur vos services.`}
+                      href={`https://wa.me/${pageContent.whatsapp.phoneNumber.replace(/[\s\+]/g, '')}?text=Bonjour, je souhaiterais obtenir des informations sur vos services.`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-3 w-full py-4 px-6 bg-white text-green-600 font-bold text-lg rounded-2xl hover:bg-green-50 transition-all transform hover:scale-105 shadow-xl hover:shadow-2xl"
                       aria-label="Ouvrir WhatsApp pour contacter ÉBENOR CRÉATION (ouvre dans un nouvel onglet)"
                     >
                       <span className="text-2xl">📱</span>
-                      <span>Ouvrir WhatsApp</span>
+                      <span>{pageContent.whatsapp.buttonText}</span>
                       <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                       </svg>
@@ -495,13 +871,13 @@ export default function ContactPage() {
                 <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-8 py-6">
                   <h3 className="text-3xl font-bold text-white flex items-center gap-3">
                     <MapPinIcon className="w-8 h-8" />
-                    Notre Localisation
+                    {pageContent.map.title}
                   </h3>
-                  <p className="text-amber-100 mt-2">Zone Industrielle, Tunis - Tunisie</p>
+                  <p className="text-amber-100 mt-2">{pageContent.map.subtitle}</p>
                 </div>
                 <div className="relative h-[500px] w-full">
                   <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d102948.82073654844!2d10.08080475!3d36.8064948!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x12fd34cf7c5f06b1%3A0x6b94f7608db567e!2sZone%20Industrielle%2C%20Tunis%2C%20Tunisia!5e0!3m2!1sen!2s!4v1234567890123!5m2!1sen!2s"
+                    src={pageContent.map.embedUrl}
                     width="100%"
                     height="100%"
                     style={{ border: 0 }}
@@ -518,7 +894,7 @@ export default function ContactPage() {
         </section>
 
         {/* Section FAQ */}
-        <section className="py-20 bg-white" aria-label="Questions fréquemment posées">
+        <section className="py-20 bg-gradient-to-b from-white to-amber-50/20" aria-label="Questions fréquemment posées">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -526,59 +902,85 @@ export default function ContactPage() {
               viewport={{ once: true }}
               className="text-center mb-16"
             >
+              <div className="inline-block mb-4">
+                <span className="px-4 py-2 bg-amber-100 text-amber-800 font-semibold rounded-full text-sm tracking-wide uppercase">
+                  Aide & Support
+                </span>
+              </div>
               <h2 className="text-4xl lg:text-5xl font-bold text-neutral-900 mb-4">
-                Questions <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-amber-500">Fréquentes</span>
+                {pageContent.faq.title.split(' ')[0]} <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 to-amber-500">{pageContent.faq.title.split(' ').slice(1).join(' ')}</span>
               </h2>
-              <p className="text-xl text-neutral-600 max-w-2xl mx-auto">
-                Trouvez rapidement les réponses aux questions les plus courantes
+              <p className="text-xl text-neutral-600 max-w-2xl mx-auto leading-relaxed">
+                {pageContent.faq.subtitle}
               </p>
             </motion.div>
             
-            <div className="grid gap-6 md:grid-cols-2 max-w-5xl mx-auto">
-              {[
-                {
-                  question: "Quel est le délai de fabrication ?",
-                  answer: "Les délais varient selon la complexité du projet, généralement entre 2 à 8 semaines pour les créations sur mesure.",
-                  icon: "⏱️"
-                },
-                {
-                  question: "Proposez-vous la livraison ?",
-                  answer: "Oui, nous assurons la livraison et l'installation dans toute la Tunisie. Les frais dépendent de la distance et du volume.",
-                  icon: "🚚"
-                },
-                {
-                  question: "Quelles essences de bois utilisez-vous ?",
-                  answer: "Nous travaillons avec diverses essences : chêne, hêtre, noyer, acajou, selon vos préférences et le budget.",
-                  icon: "🌳"
-                },
-                {
-                  question: "Comment obtenir un devis ?",
-                  answer: "Contactez-nous avec les détails de votre projet. Nous vous fournirons un devis détaillé gratuit sous 48h.",
-                  icon: "💰"
-                }
-              ].map((faq, index) => (
+            <div className="grid gap-5 md:grid-cols-2 max-w-6xl mx-auto">
+              {pageContent.faq.questions.map((faq, index) => (
                 <motion.article
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-gradient-to-br from-white to-amber-50/30 rounded-2xl p-6 border-2 border-amber-100 hover:border-amber-300 hover:shadow-xl transition-all group"
+                  className="group relative bg-white rounded-2xl p-8 border border-neutral-200 hover:border-amber-400 hover:shadow-2xl transition-all duration-300 overflow-hidden"
                 >
-                  <div className="flex items-start gap-4">
-                    <span className="text-4xl group-hover:scale-110 transition-transform">{faq.icon}</span>
-                    <div>
-                      <h3 className="font-bold text-neutral-900 mb-2 text-lg group-hover:text-amber-600 transition-colors">
-                        {faq.question}
-                      </h3>
-                      <p className="text-neutral-600 leading-relaxed">
-                        {faq.answer}
-                      </p>
-                    </div>
+                  {/* Decorative gradient on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  {/* Question number badge */}
+                  <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-br from-amber-500/10 to-amber-600/5 rounded-bl-3xl flex items-start justify-end p-3">
+                    <span className="text-amber-600/40 font-bold text-lg group-hover:text-amber-600/60 transition-colors">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
                   </div>
+                  
+                  <div className="relative z-10">
+                    {/* Question */}
+                    <h3 className="font-bold text-neutral-900 mb-4 text-xl leading-tight group-hover:text-amber-700 transition-colors pr-8">
+                      {faq.question}
+                    </h3>
+                    
+                    {/* Divider */}
+                    <div className="w-16 h-1 bg-gradient-to-r from-amber-500 to-amber-300 rounded-full mb-4 group-hover:w-24 transition-all duration-300" />
+                    
+                    {/* Answer */}
+                    <p className="text-neutral-600 leading-relaxed text-base">
+                      {faq.answer}
+                    </p>
+                  </div>
+                  
+                  {/* Bottom corner accent */}
+                  <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-amber-500/5 to-transparent rounded-tr-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </motion.article>
               ))}
             </div>
+            
+            {/* CTA below FAQs */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.5 }}
+              className="mt-16 text-center"
+            >
+              <div className="inline-block bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-3xl p-8 border-2 border-amber-200">
+                <p className="text-neutral-800 text-lg mb-4 font-medium">
+                  Vous n'avez pas trouvé la réponse à votre question ?
+                </p>
+                <a
+                  href="#form"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.querySelector('form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }}
+                  className="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-xl hover:from-amber-600 hover:to-amber-700 transition-all transform hover:scale-105 shadow-lg hover:shadow-xl"
+                >
+                  <ChatBubbleLeftRightIcon className="w-5 h-5" />
+                  Contactez-nous directement
+                </a>
+              </div>
+            </motion.div>
           </div>
         </section>
       </div>

@@ -124,7 +124,7 @@ export default function ProductsListPage() {
         setCategories(response.data);
       }
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      // Error fetching categories
     }
   };
 

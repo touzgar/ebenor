@@ -11,6 +11,7 @@ export interface Product {
   slug: string;
   description: string;
   shortDescription: string;
+  longDescription?: string;
   category: string;
   subcategory?: string;
   images: Array<{
@@ -18,6 +19,11 @@ export interface Product {
     alt: string;
     isPrimary: boolean;
   }>;
+  video?: {
+    url: string;
+    publicId?: string;
+    thumbnail?: string;
+  };
   specifications: Record<string, string>;
   dimensions?: {
     length?: number;
@@ -206,8 +212,8 @@ export async function getCategories(): Promise<CategoriesResponse> {
     headers: {
       'Content-Type': 'application/json',
     },
-    cache: 'force-cache', // Cache categories as they don't change often
-    next: { revalidate: 3600 }, // Revalidate every hour
+    // Avoid aggressive caching in dev so changes are visible immediately
+    cache: 'no-store',
   });
 
   if (!response.ok) {

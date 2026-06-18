@@ -21,7 +21,7 @@ const router = Router();
  * @desc    Obtenir le contenu de la page d'accueil
  * @access  Public
  */
-router.get('/home', CacheStrategies.medium(), homeController.getHomeContent);
+router.get('/home', CacheStrategies.short(), homeController.getHomeContent);
 
 /**
  * @route   GET /api/home/stats

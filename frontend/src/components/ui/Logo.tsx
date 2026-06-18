@@ -47,7 +47,6 @@ export function Logo({
             unoptimized
             onError={(e) => {
               // Fallback vers le logo par défaut si l'image personnalisée n'existe pas
-              console.warn('Logo personnalisé non trouvé, utilisation du logo par défaut');
               e.currentTarget.style.display = 'none';
             }}
           />
@@ -67,7 +66,6 @@ export function Logo({
             priority
             unoptimized
             onError={(e) => {
-              console.warn('Icône personnalisée non trouvée, utilisation de l\'icône par défaut');
               e.currentTarget.style.display = 'none';
             }}
           />

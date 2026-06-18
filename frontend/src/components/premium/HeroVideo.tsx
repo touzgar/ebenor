@@ -1,14 +1,35 @@
 'use client';
 
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { HiArrowDown } from 'react-icons/hi';
-import { useHomeContent } from '@/hooks';
+
+interface HeroContent {
+  companyName: string;
+  title: string;
+  subtitle: string;
+  ctaText: string;
+  ctaLink: string;
+  videoUrl: string;
+  backgroundImage: string;
+}
+
+const defaultContent: HeroContent = {
+  companyName: "ÉBENOR CRÉATION",
+  title: "L'élégance du bois, l'empreinte de l'art",
+  subtitle: "Découvrez l'excellence de l'ébénisterie tunisienne avec ÉBÉNOR CRÉATION. Nous transformons vos espaces en œuvres d'art avec passion et savoir-faire depuis plus de 25 ans.",
+  ctaText: "Demander un devis",
+  ctaLink: "/contact",
+  videoUrl: "/video/hero.mp4",
+  backgroundImage: "https://images.unsplash.com/photo-1615529182904-14819c35db37?w=1920",
+};
 
 export function HeroVideo() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { content, loading } = useHomeContent();
+  const [content, setContent] = useState<HeroContent>(defaultContent);
+  const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
   
   // Parallax effect
   const { scrollYProgress } = useScroll({
@@ -20,12 +41,95 @@ export function HeroVideo() {
   const y = useTransform(scrollYProgress, [0, 1], ["0%", "50%"]);
   const scale = useTransform(scrollYProgress, [0, 1], [1, 1.1]);
 
+  useEffect(() => {
+    setMounted(true);
+    
+    const loadContent = () => {
+      try {
+        // First try localStorage (admin updates)
+        const saved = localStorage.getItem('homepage_content');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed.hero) {
+            console.log('🎬 HeroVideo: Loading from localStorage:', parsed.hero.videoUrl);
+            setContent(parsed.hero);
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // Fallback to API
+        const fetchFromAPI = async () => {
+          try {
+            const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+            const timestamp = new Date().getTime();
+            const response = await fetch(`${API_BASE_URL}/home?t=${timestamp}`, {
+              headers: {
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+              }
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data.data?.hero) {
+                console.log('🎬 HeroVideo: Loading from API:', data.data.hero.videoUrl);
+                setContent(data.data.hero);
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching hero content:', error);
+          } finally {
+            setLoading(false);
+          }
+        };
+        
+        fetchFromAPI();
+      } catch (error) {
+        console.error('Error loading hero content:', error);
+        setLoading(false);
+      }
+    };
+
+    loadContent();
+
+    // Listen for updates from admin panel
+    const handleUpdate = () => {
+      console.log('🔄 HeroVideo: Received update event, reloading...');
+      loadContent();
+    };
+
+    window.addEventListener('homepage_content_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+
+    // Listen to BroadcastChannel for cross-tab updates
+    let channel: BroadcastChannel | null = null;
+    try {
+      channel = new BroadcastChannel('homepage_updates');
+      channel.addEventListener('message', (event) => {
+        if (event.data.type === 'update' && event.data.data.hero) {
+          console.log('📡 HeroVideo: Received BroadcastChannel update:', event.data.data.hero.videoUrl);
+          setContent(event.data.data.hero);
+        }
+      });
+    } catch (e) {
+      // BroadcastChannel not supported
+    }
+
+    return () => {
+      window.removeEventListener('homepage_content_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+      if (channel) {
+        channel.close();
+      }
+    };
+  }, []);
+
   const scrollToNext = () => {
     const nextSection = document.getElementById('about');
     nextSection?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  if (loading || !content) {
+  if (loading || !mounted) {
     return (
       <section className="relative h-screen flex items-center justify-center overflow-hidden bg-gray-900">
         <video
@@ -35,7 +139,7 @@ export function HeroVideo() {
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
         >
-          <source src="/video/hero.mp4" type="video/mp4" />
+          <source src={defaultContent.videoUrl} type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-black/60" />
         <div className="relative z-10 text-center text-white max-w-4xl mx-auto px-4">
@@ -65,6 +169,7 @@ export function HeroVideo() {
         className="absolute inset-0 w-full h-full"
       >
         <video
+          key={content?.videoUrl || defaultContent.videoUrl}
           ref={videoRef}
           autoPlay
           muted
@@ -75,12 +180,12 @@ export function HeroVideo() {
             // Video loaded successfully
           }}
         >
-          <source src="/video/hero.mp4" type="video/mp4" />
+          <source src={content?.videoUrl || defaultContent.videoUrl} type="video/mp4" />
           {/* Fallback image si la vidéo ne charge pas */}
           <div 
             className="absolute inset-0 w-full h-full bg-cover bg-center"
             style={{
-              backgroundImage: `url('${content.hero.backgroundImage}')`
+              backgroundImage: `url('${content?.backgroundImage || defaultContent.backgroundImage}')`
             }}
           />
         </video>
@@ -105,14 +210,23 @@ export function HeroVideo() {
           }}
           className="mb-2"
         >
-          {/* Nom de l'Usine */}
+          {/* Nom de l'Usine - Dynamic */}
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.8 }}
             className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-2 tracking-tight"
           >
-            ÉBENOR<span className="text-[#C9A14A]"> CRÉATION</span>
+            {content?.companyName ? (
+              <>
+                {content.companyName.split(' ')[0]}
+                <span className="text-[#C9A14A]"> {content.companyName.split(' ').slice(1).join(' ')}</span>
+              </>
+            ) : (
+              <>
+                ÉBENOR<span className="text-[#C9A14A]"> CRÉATION</span>
+              </>
+            )}
           </motion.h2>
           
           {/* Ligne décorative */}
@@ -136,10 +250,10 @@ export function HeroVideo() {
           className="mb-2"
         >
           <h1 className="text-2xl md:text-4xl lg:text-5xl font-serif font-light leading-tight tracking-wide mb-2">
-            {content.hero.title}
+            {content?.title || "L'élégance du bois, l'empreinte de l'art"}
           </h1>
           <p className="text-base md:text-lg text-gray-200 max-w-2xl mx-auto leading-relaxed">
-            {content.hero.subtitle}
+            {content?.subtitle || "Découvrez l'excellence de l'ébénisterie tunisienne"}
           </p>
         </motion.div>
 
@@ -172,7 +286,7 @@ export function HeroVideo() {
             
             {/* Button Text */}
             <span className="relative z-10 tracking-wide">
-              {content.hero.ctaText}
+              {content?.ctaText || "Demander un devis"}
             </span>
             
             {/* Shine Effect */}

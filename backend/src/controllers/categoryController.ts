@@ -3,6 +3,7 @@ import { Category } from '../models/Category';
 import { ApiError, ERROR_CODES } from '../middleware/errorHandler';
 import { ApiResponse, PaginatedResponse } from '../types';
 import { logger } from '../utils/logger';
+import { cacheService } from '../services/cacheService';
 
 export class CategoryController {
   /**
@@ -120,6 +121,10 @@ export class CategoryController {
 
       await category.save();
 
+      // Invalidate product categories cache
+      cacheService.del('products:categories');
+      cacheService.delPattern('^products:list:');
+
       logger.info('Category created', { categoryId: category._id, name });
 
       const response: ApiResponse = {
@@ -184,6 +189,10 @@ export class CategoryController {
 
       await category.save();
 
+      // Invalidate product categories cache
+      cacheService.del('products:categories');
+      cacheService.delPattern('^products:list:');
+
       logger.info('Category updated', { categoryId: category._id, name: category.name });
 
       const response: ApiResponse = {
@@ -211,6 +220,10 @@ export class CategoryController {
       }
 
       await category.deleteOne();
+
+      // Invalidate product categories cache
+      cacheService.del('products:categories');
+      cacheService.delPattern('^products:list:');
 
       logger.info('Category deleted', { categoryId: req.params.id, name: category.name });
 
@@ -283,6 +296,10 @@ export class CategoryController {
           skipped.push({ name: categoryData.name, reason: 'Already exists' });
         }
       }
+
+      // Invalidate product categories cache
+      cacheService.del('products:categories');
+      cacheService.delPattern('^products:list:');
 
       const response: ApiResponse = {
         success: true,

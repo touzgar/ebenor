@@ -25,16 +25,30 @@ const PORT = process.env.PORT || 5000;
 const corsOptions = {
   origin: function (origin: string | undefined, callback: Function) {
     const allowedOrigins = [
-      process.env.FRONTEND_URL || 'http://localhost:3001',
+      process.env.FRONTEND_URL || 'http://localhost:3002',
       'http://localhost:3000',
       'http://localhost:3001',
+      'http://localhost:3002',
+      'http://127.0.0.1:3002',
     ];
-    
+
     // Permettre les requêtes sans origine en développement (Postman, curl, etc.)
     if (process.env.NODE_ENV === 'development' && !origin) {
       return callback(null, true);
     }
-    
+
+    // En développement, autoriser toute origine localhost (ports variables)
+    if (process.env.NODE_ENV === 'development' && origin) {
+      try {
+        const host = new URL(origin).host;
+        if (host.startsWith('localhost') || host.startsWith('127.0.0.1')) {
+          return callback(null, true);
+        }
+      } catch (e) {
+        // fallthrough to default check
+      }
+    }
+
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -44,7 +58,7 @@ const corsOptions = {
   credentials: true, // Important pour les cookies CSRF
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token', 'Cache-Control'],
   exposedHeaders: ['Set-Cookie'],
 };
 

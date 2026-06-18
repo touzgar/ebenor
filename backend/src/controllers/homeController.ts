@@ -46,6 +46,7 @@ export class HomeController {
   private async createDefaultHomeContent() {
     const defaultContent = new HomeContent({
       hero: {
+        companyName: "ÉBÉNOR CRÉATION",
         title: "L'élégance du bois, l'empreinte de l'art",
         subtitle: "Découvrez l'excellence de l'ébénisterie tunisienne avec ÉBÉNOR CRÉATION. Nous transformons vos espaces en œuvres d'art avec passion et savoir-faire depuis plus de 25 ans.",
         backgroundImage: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80",

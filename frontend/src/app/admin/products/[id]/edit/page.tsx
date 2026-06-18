@@ -98,7 +98,7 @@ export default function EditProductPage() {
         setCategories(response.data);
       }
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      // Error fetching categories
     } finally {
       setLoadingCategories(false);
     }

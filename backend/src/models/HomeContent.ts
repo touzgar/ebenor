@@ -5,9 +5,11 @@ export interface HomeContentDocument extends IHomeContent, Document {}
 
 const HomeContentSchema = new Schema<HomeContentDocument>({
   hero: {
+    companyName: { type: String, maxlength: 100 },
     title: { type: String, required: true, maxlength: 200 },
     subtitle: { type: String, required: true, maxlength: 500 },
-    backgroundImage: { type: String, required: true },
+    backgroundImage: { type: String },
+    videoUrl: { type: String },
     ctaText: { type: String, required: true, maxlength: 50 },
     ctaLink: { type: String, required: true }
   },
