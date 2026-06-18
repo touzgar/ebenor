@@ -6,6 +6,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import Product from '@/lib/models/Product';
 
+// Force this route to be dynamic (not static)
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   try {
     // Connect to database

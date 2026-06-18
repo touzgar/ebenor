@@ -5,6 +5,10 @@
 import { NextResponse } from 'next/server';
 import { connectDB, getConnectionState } from '@/lib/mongodb';
 
+// Force this route to be dynamic (not static)
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function GET() {
   try {
     // Try to connect to MongoDB

@@ -4,11 +4,8 @@
  */
 import mongoose from 'mongoose';
 
-if (!process.env.MONGODB_URI) {
-  throw new Error('Please define MONGODB_URI environment variable');
-}
-
-const MONGODB_URI = process.env.MONGODB_URI;
+// Allow missing MONGODB_URI during build time
+const MONGODB_URI = process.env.MONGODB_URI || '';
 
 interface MongooseCache {
   conn: typeof mongoose | null;
@@ -31,6 +28,12 @@ if (!global.mongoose) {
  * Connect to MongoDB with caching for serverless
  */
 export async function connectDB(): Promise<typeof mongoose> {
+  // Skip connection during build time
+  if (!MONGODB_URI) {
+    console.warn('⚠️ MONGODB_URI not defined - skipping connection');
+    throw new Error('MONGODB_URI is not defined');
+  }
+
   if (cached.conn) {
     return cached.conn;
   }
