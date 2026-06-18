@@ -27,7 +27,6 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_WHATSAPP_NUMBER: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '+216XXXXXXXX',
   },
-  // API routes are now built into Next.js - no external rewrites needed
   async headers() {
     return [
       {
@@ -105,7 +104,6 @@ const nextConfig = {
       exclude: ['error', 'warn'],
     } : false,
   },
-  // Suppress all output in development
   onDemandEntries: {
     maxInactiveAge: 25 * 1000,
     pagesBufferLength: 2,
@@ -113,24 +111,22 @@ const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   swcMinify: true,
-  // Disable TypeScript and ESLint checks during build
   typescript: {
     ignoreBuildErrors: true,
   },
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Suppress all logs and warnings
   logging: {
     fetches: {
       fullUrl: false,
     },
   },
-  // Enable experimental features for better performance
+  // CRITICAL: Handle MongoDB for Next.js
   experimental: {
+    serverComponentsExternalPackages: ['mongoose', 'mongodb', 'bson'],
     optimizePackageImports: ['@heroicons/react', 'lucide-react', 'framer-motion'],
   },
-  // Completely suppress all webpack output and warnings
   webpack: (config, { dev, isServer }) => {
     // Suppress all webpack output
     config.infrastructureLogging = {
@@ -145,6 +141,19 @@ const nextConfig = {
     // Suppress stats
     if (dev && !isServer) {
       config.stats = 'none';
+    }
+
+    // Handle MongoDB native modules
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push({
+        'mongodb-client-encryption': 'commonjs mongodb-client-encryption',
+        'aws4': 'commonjs aws4',
+        'snappy': 'commonjs snappy',
+        'kerberos': 'commonjs kerberos',
+        '@mongodb-js/zstd': 'commonjs @mongodb-js/zstd',
+        'bson-ext': 'commonjs bson-ext',
+      });
     }
     
     return config;
