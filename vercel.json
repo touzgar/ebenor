@@ -1,24 +1,31 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/next"
-    },
-    {
-      "src": "backend/package.json",
-      "use": "@vercel/node"
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "devCommand": "cd frontend && npm run dev",
+  "installCommand": "cd frontend && npm install",
+  "outputDirectory": "frontend/.next",
+  "framework": null,
+  "functions": {
+    "backend/api/*.ts": {
+      "runtime": "@vercel/node@3.0.0"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/api/index.ts",
-      "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
+      "dest": "/backend/api/index.ts"
+    },
+    {
+      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
-      "dest": "frontend/$1"
+      "dest": "/frontend/$1"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/backend/api/index.ts"
     }
   ]
 }
